@@ -4,32 +4,25 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import measure
-from skimage.measure import regionprops
 from tqdm import tqdm
 
-def extract_spine_bounding_boxes(
-    mask_path, output_format='yolo', image_width=None, image_height=None, 
-    min_area=50, min_height=10, min_width=10):
+def extract_spine_yolo_boxes(mask_path, image_width=None, image_height=None, padding=0):
     '''
     Extract bounding boxes from a spine ultrasound segmentation mask, 
     with specialized filtering for vertebral structures.
     
     Args:
         mask_path (str): Path to the binary segmentation mask image
-        output_format (str): Format of the output ('yolo' or 'voc')
         image_width (int): Width of the original image (needed for YOLO format)
         image_height (int): Height of the original image (needed for YOLO format)
-        min_area (int): Minimum area of regions to consider
-        min_height (int): Minimum height of bounding boxes
-        min_width (int): Minimum width of bounding boxes
+        padding (int): Padding to add around detected objects in pixels
     
     Returns:
         list: List of bounding boxes in the specified format
     '''
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) # Read the mask
     if mask is None:
-        print(f'Error: Could not read mask at {mask_path}')
-        return []
+        raise ValueError(f"Failed to read mask image from {mask_path}")
     
     # Get image dimensions if not provided
     if image_height is None: image_height = mask.shape[0]
@@ -38,41 +31,38 @@ def extract_spine_bounding_boxes(
     # Create a binary mask (ensure the mask is binary)
     _, binary_mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
     
-    # Optional: Apply morphological operations to improve segmentation
-    kernel = np.ones((3, 3), np.uint8)
-    binary_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_CLOSE, kernel)
+    # Apply morphological operations to improve segmentation
+    # kernel = np.ones((3, 3), np.uint8)
+    # binary_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_CLOSE, kernel)
     
-    # Label connected components in the mask
-    labeled_mask = measure.label(binary_mask)
-    
-    # Extract properties for each labeled region
-    regions = regionprops(labeled_mask)
+    labeled_mask = measure.label(binary_mask) # Label connected components in the mask
+    regions = measure.regionprops(labeled_mask) # Extract properties for each labeled region
     bounding_boxes = []
     
     for region in regions:
-        # Get bounding box coordinates (min_row, min_col, max_row, max_col)
-        min_row, min_col, max_row, max_col = region.bbox
-        height, width = max_row - min_row, max_col - min_col # Calculate dimensions
+        y_min, x_min, y_max, x_max = region.bbox # Get bounding box coordinates
+        x_min = max(0, x_min - padding)
+        y_min = max(0, y_min - padding)
+        x_max = min(mask.shape[1], x_max + padding)
+        y_max = min(mask.shape[0], y_max + padding)
         
-        # Filter regions based on area and dimensions
-        # These thresholds may need adjustment based on your specific dataset
-        if region.area < min_area or height < min_height or width < min_width: continue
+        # Assuming top vertebrae are thoracic (class 0) and bottom are lumbar (class 1)
+        class_id = 0 if y_min < mask.shape[0] / 2 else 1  # Thoracic or Lumbar
         
-        # Optional: Filter based on aspect ratio for vertebral structures
-        aspect_ratio = width / max(height, 1)  # Avoid division by zero
-        if aspect_ratio > 3.0: continue # Vertebrae typically aren't too wide compared to height
+        # Filter based on aspect ratio for vertebral structures
+        # aspect_ratio = width / max(height, 1)  # Avoid division by 0
+        # if aspect_ratio > 3.0: continue # Vertebrae typically aren't too wide compared to height
         
-        # Convert to the requested format
-        if output_format.lower() == 'yolo': # YOLO format: [x_center, y_center, width, height] (normalized)
-            x_center = ((min_col + max_col) / 2) / image_width
-            y_center = ((min_row + max_row) / 2) / image_height
-            width, height = width / image_width, height / image_height
-            bounding_boxes.append([x_center, y_center, width, height])
-        else: bounding_boxes.append([min_col, min_row, max_col, max_row]) # VOC format: [xmin, ymin, xmax, ymax]
+        # Convert to YOLO format: [class_id, x_center, y_center, width, height] (normalized)
+        x_center = (x_min + x_max) / (2 * image_width)
+        y_center = (y_min + y_max) / (2 * image_height)
+        width = (x_max - x_min) / image_width
+        height = (y_max - y_min) / image_height
+        bounding_boxes.append([class_id, x_center, y_center, width, height])
     return bounding_boxes
 
 
-def visualize_spine_segmentation_and_boxes(image_path, mask_path, output_path=None, output_format='yolo'):
+def visualize_spine_segmentation_and_boxes(output_path, image_path, mask_path, boxes):
     '''
     Create a visualization showing the original image, mask, and detected bounding boxes.
     
@@ -86,75 +76,75 @@ def visualize_spine_segmentation_and_boxes(image_path, mask_path, output_path=No
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
     
     if original is None or mask is None:
-        print('Error: Could not read one or both images')
-        return
-    
-    original_rgb = cv2.cvtColor(original, cv2.COLOR_BGR2RGB) # Convert original to RGB (from BGR)
-    image_with_boxes = original_rgb.copy() # Create a copy of the original for drawing boxes
+        raise ValueError(f"Failed to read image or mask from {image_path} or {mask_path}")
     
     # Extract bounding boxes
+    original_rgb = cv2.cvtColor(original, cv2.COLOR_BGR2RGB) # Convert original to RGB (from BGR)
+    image_with_boxes = original_rgb.copy() # Create a copy of the original for drawing boxes
     image_height, image_width = original.shape[:2]
-    boxes = extract_spine_bounding_boxes(mask_path, output_format, image_width, image_height)
     
-    # Draw bounding boxes on the image
-    for box in boxes:
-        if output_format.lower() == 'yolo':
-            # Convert YOLO format to pixel coordinates
-            x_center, y_center, width, height = box
-            x_center *= image_width
-            y_center *= image_height
-            width *= image_width
-            height *= image_height
-            
-            x_min = int(x_center - width / 2)
-            y_min = int(y_center - height / 2)
-            x_max = int(x_center + width / 2)
-            y_max = int(y_center + height / 2)
-        else: x_min, y_min, x_max, y_max = [int(coord) for coord in box] # VOC format
-        cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), (0, 255, 0), 5)
+    # Draw bounding boxes on the image and count classes
+    for idx, (class_id, x_center, y_center, width, height) in enumerate(boxes):
+        # Convert YOLO format to pixel coordinates
+        x_min = int((x_center - width / 2) * image_width)
+        y_min = int((y_center - height / 2) * image_height)
+        x_max = int((x_center + width / 2) * image_width)
+        y_max = int((y_center + height / 2) * image_height)
+        
+        # color = (220, 20, 60) if class_id == 0 else (46, 204, 113)  # Red for Thoracic, Green for Lumbar
+        color = (240, 128, 128) if class_id == 0 else (144, 238, 144) # Red for Thoracic, Green for Lumbar
+        cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), color, 5) # Draw the bounding box
+        
+        # Calculate center position for the label and text position to center it
+        label_x = x_min + (x_max - x_min) // 2
+        label_y = y_min + (y_max - y_min) // 2
+        font_scale, font_thickness = 2.0, 5
+        
+        (text_width, text_height), _ = cv2.getTextSize(f'{idx + 1}', cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+        text_x = label_x - text_width // 2
+        text_y = label_y + text_height // 2
+        
+        # Draw the label text in the center of the box
+        cv2.putText(
+            image_with_boxes, f'{idx + 1}', (text_x, text_y), 
+            cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, font_thickness
+        )
     
-    
-    # Create a figure with 3 subplots
+    # Create a figure with 4 subplots
     plt.subplot(1, 3, 1) # Original image
     plt.imshow(original_rgb)
-    plt.title('Original Ultrasound')
+    plt.title('Original Ultrasound', fontsize=7)
     plt.axis('off')
     
     plt.subplot(1, 3, 2) # Mask
     plt.imshow(mask, cmap='gray')
-    plt.title('Segmentation Mask')
+    plt.title('Segmentation Mask', fontsize=7)
     plt.axis('off')
     
     plt.subplot(1, 3, 3) # Image with bounding boxes
     plt.imshow(image_with_boxes)
-    plt.title('Obtained Boxes')
+    plt.title('Obtained Boxes', fontsize=7)
     plt.axis('off')
-    plt.tight_layout()
     
     if output_path: # Save or show the figure
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
-        # print(f'Visualization saved to {output_path}')
     else: plt.show()
     
 
-def batch_process_spine_data(
-    mask_dir, original_dir, output_dir, annotation_dir, 
-    output_format='yolo', create_visualizations=True):
+def batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir=None):
     '''
     Process all spine ultrasound images and masks in the given directories.
     
     Args:
         mask_dir (str): Directory containing segmentation masks
         original_dir (str): Directory containing original ultrasound images
-        output_dir (str): Directory to save visualizations
         annotation_dir (str): Directory to save bounding box annotations
-        output_format (str): Format of the output ('yolo' or 'voc')
-        create_visualizations (bool): Whether to create visualization images
+        viz_dir (str): Directory to save visualizations. If None, no visualizations are saved.
     '''
     # Create output directories if they don't exist and get all mask files
-    os.makedirs(output_dir, exist_ok=True)
     os.makedirs(annotation_dir, exist_ok=True)
+    os.makedirs(viz_dir, exist_ok=True) if viz_dir else None
     mask_files = glob.glob(os.path.join(mask_dir, '*.png')) + glob.glob(os.path.join(mask_dir, '*.jpg'))
     
     for mask_path in tqdm(mask_files):
@@ -163,15 +153,7 @@ def batch_process_spine_data(
         name, ext = os.path.splitext(filename)
         
         # Find the corresponding original image
-        potential_exts = ['.png', '.jpg', '.jpeg']
-        original_path = None
-        
-        for potential_ext in potential_exts:
-            potential_path = os.path.join(original_dir, name + potential_ext)
-            if os.path.exists(potential_path):
-                original_path = potential_path
-                break
-        
+        original_path = os.path.join(original_dir, name + '.jpg')
         if original_path is None:
             print(f'Warning: No matching original image found for {filename}')
             continue
@@ -179,33 +161,27 @@ def batch_process_spine_data(
         # Extract bounding boxes
         original_img = cv2.imread(original_path)
         image_height, image_width = original_img.shape[:2]
-        boxes = extract_spine_bounding_boxes(mask_path, output_format, image_width, image_height)
+        try:
+            boxes = extract_spine_yolo_boxes(mask_path, image_width, image_height)
+        except Exception as e:
+            print(f'Error processing {mask_path}: {e}')
+            continue
         
         # Save annotations
         annotation_path = os.path.join(annotation_dir, f'{name}.txt')
         with open(annotation_path, 'w') as f:
-            for box in boxes:
-                if output_format.lower() == 'yolo':
-                    line = f'0 {box[0]:.6f} {box[1]:.6f} {box[2]:.6f} {box[3]:.6f}\n' # YOLO format with class ID 0
-                else: line = f'0,{box[0]},{box[1]},{box[2]},{box[3]}\n' # VOC format
-                f.write(line)
-        # print(f'Saved annotations for {filename} to {annotation_path}')
+            for class_id, x_center, y_center, width, height in boxes:
+                f.write(f'{class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n')
         
         # Create visualization if requested
-        if create_visualizations:
-            visualization_path = os.path.join(output_dir, f'{name}_visualization.png')
-            visualize_spine_segmentation_and_boxes(original_path, mask_path, visualization_path, output_format)
+        if viz_dir is not None:
+            visualization_path = os.path.join(viz_dir, f'{name}_visualization.png')
+            visualize_spine_segmentation_and_boxes(visualization_path, original_path, mask_path, boxes)
+
 
 if __name__ == '__main__':
-    # Process all images in batch
     mask_dir = './dataset/mask'
     original_dir = './dataset/image'
-    output_dir = './dataset/visualizations'
     annotation_dir = './dataset/annotations'
-    batch_process_spine_data(mask_dir, original_dir, output_dir, annotation_dir, output_format='yolo')
-
-    # Process a single pair
-    # single_mask_path = './dataset/masks/example_mask.png'
-    # single_image_path = './dataset/images/example_image.png'
-    # single_output_path = './dataset/visualizations/example_visualization.png'
-    # visualize_spine_segmentation_and_boxes(single_image_path, single_mask_path, single_output_path, 'yolo')
+    viz_dir = './dataset/visualizations'
+    batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir)
