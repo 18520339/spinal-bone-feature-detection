@@ -39,19 +39,17 @@ def extract_spine_yolo_boxes(mask_path, image_width=None, image_height=None, pad
     regions = measure.regionprops(labeled_mask) # Extract properties for each labeled region
     bounding_boxes = []
     
-    for region in regions:
+    # Sort regions by y-coordinate (highest y = bottom of image)
+    sorted_regions = sorted(regions, key=lambda r: r.bbox[0], reverse=True)
+    num_lumbar = min(6, len(sorted_regions)) # Determine how many regions should be lumbar (class 1)
+    
+    for i, region in enumerate(sorted_regions):
         y_min, x_min, y_max, x_max = region.bbox # Get bounding box coordinates
         x_min = max(0, x_min - padding)
         y_min = max(0, y_min - padding)
         x_max = min(mask.shape[1], x_max + padding)
         y_max = min(mask.shape[0], y_max + padding)
-        
-        # Assuming top vertebrae are thoracic (class 0) and bottom are lumbar (class 1)
-        class_id = 0 if y_min < mask.shape[0] / 2 else 1  # Thoracic or Lumbar
-        
-        # Filter based on aspect ratio for vertebral structures
-        # aspect_ratio = width / max(height, 1)  # Avoid division by 0
-        # if aspect_ratio > 3.0: continue # Vertebrae typically aren't too wide compared to height
+        class_id = 1 if i < num_lumbar else 0 # Bottom 6 regions are lumbar (class 1), the rest are thoracic (class 0)
         
         # Convert to YOLO format: [class_id, x_center, y_center, width, height] (normalized)
         x_center = (x_min + x_max) / (2 * image_width)
@@ -184,4 +182,25 @@ if __name__ == '__main__':
     original_dir = './dataset/image'
     annotation_dir = './dataset/annotations'
     viz_dir = './dataset/visualizations'
-    batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir)
+    # batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir)
+
+    # Read boxes from each file and visualize them
+    for mask_path in tqdm(glob.glob(os.path.join(mask_dir, '*.png')) + glob.glob(os.path.join(mask_dir, '*.jpg'))):
+        # Get the filename without extension
+        filename = os.path.basename(mask_path)
+        name, ext = os.path.splitext(filename)
+        
+        # Find the corresponding original image
+        original_path = os.path.join(original_dir, name + '.jpg')
+        if original_path is None:
+            print(f'Warning: No matching original image found for {filename}')
+            continue
+        
+        # Read the bounding boxes from the annotation file
+        annotation_path = os.path.join(annotation_dir, f'{name}.txt')
+        with open(annotation_path, 'r') as f:
+            boxes = [list(map(float, line.strip().split())) for line in f.readlines()]
+        
+        # Create visualization
+        visualization_path = os.path.join(viz_dir, f'{name}_visualization.png')
+        visualize_spine_segmentation_and_boxes(visualization_path, original_path, mask_path, boxes)
