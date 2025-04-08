@@ -5,15 +5,13 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def extract_spine_yolo_boxes(mask_path, image_width=None, image_height=None, padding=0):
+def extract_spine_boxes(mask_path, padding=0):
     '''
     Extract bounding boxes from a spine ultrasound segmentation mask, 
     with specialized filtering for vertebral structures.
     
     Args:
         mask_path (str): Path to the binary segmentation mask image
-        image_width (int): Width of the original image (needed for YOLO format)
-        image_height (int): Height of the original image (needed for YOLO format)
         padding (int): Padding to add around detected objects in pixels
     
     Returns:
@@ -22,13 +20,7 @@ def extract_spine_yolo_boxes(mask_path, image_width=None, image_height=None, pad
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) # Read the mask
     if mask is None:
         raise ValueError(f"Failed to read mask image from {mask_path}")
-    
-    # Get image dimensions if not provided
-    if image_height is None: image_height = mask.shape[0]
-    if image_width is None: image_width = mask.shape[1]
-    
-    # Create a binary mask (ensure the mask is binary)
-    _, binary_mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
+    _, binary_mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY) # Create a binary mask (ensure the mask is binary)
     
     # Apply morphological operations to improve segmentation
     # kernel = np.ones((3, 3), np.uint8)
@@ -49,13 +41,7 @@ def extract_spine_yolo_boxes(mask_path, image_width=None, image_height=None, pad
         x_max = min(mask.shape[1], x_max + padding)
         y_max = min(mask.shape[0], y_max + padding)
         class_id = 1 if i < num_lumbar else 0 # Bottom 6 regions are lumbar (class 1), the rest are thoracic (class 0)
-        
-        # Convert to YOLO format: [class_id, x_center, y_center, width, height] (normalized)
-        x_center = (x_min + x_max) / (2 * image_width)
-        y_center = (y_min + y_max) / (2 * image_height)
-        width = (x_max - x_min) / image_width
-        height = (y_max - y_min) / image_height
-        bounding_boxes.append([class_id, x_center, y_center, width, height])
+        bounding_boxes.append([class_id, x_min, y_min, x_max, y_max])
     return bounding_boxes
 
 
@@ -64,10 +50,10 @@ def visualize_spine_segmentation_and_boxes(output_path, image_path, mask_path, b
     Create a visualization showing the original image, mask, and detected bounding boxes.
     
     Args:
+        output_path (str): Path to save the visualization image
         image_path (str): Path to the original ultrasound image
         mask_path (str): Path to the segmentation mask
-        output_path (str): Path to save the visualization image
-        output_format (str): Format of the bounding boxes ('yolo' or 'voc')
+        boxes (list): List of bounding boxes to draw on the image
     '''
     original = cv2.imread(image_path)
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
@@ -78,16 +64,9 @@ def visualize_spine_segmentation_and_boxes(output_path, image_path, mask_path, b
     # Extract bounding boxes
     original_rgb = cv2.cvtColor(original, cv2.COLOR_BGR2RGB) # Convert original to RGB (from BGR)
     image_with_boxes = original_rgb.copy() # Create a copy of the original for drawing boxes
-    image_height, image_width = original.shape[:2]
     
     # Draw bounding boxes on the image and count classes
-    for idx, (class_id, x_center, y_center, width, height) in enumerate(boxes):
-        # Convert YOLO format to pixel coordinates
-        x_min = int((x_center - width / 2) * image_width)
-        y_min = int((y_center - height / 2) * image_height)
-        x_max = int((x_center + width / 2) * image_width)
-        y_max = int((y_center + height / 2) * image_height)
-        
+    for idx, (class_id, x_min, y_min, x_max, y_max) in enumerate(boxes):
         # color = (220, 20, 60) if class_id == 0 else (46, 204, 113)  # Red for Thoracic, Green for Lumbar
         color = (240, 128, 128) if class_id == 0 else (144, 238, 144) # Red for Thoracic, Green for Lumbar
         cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), color, 5) # Draw the bounding box
@@ -149,17 +128,15 @@ def batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir=Non
         original_path = original_dir / f'{filename}.jpg'
         
         # Extract bounding boxes
-        original_img = cv2.imread(original_path)
-        image_height, image_width = original_img.shape[:2]
-        try: boxes = extract_spine_yolo_boxes(mask_path, image_width, image_height)
+        try: boxes = extract_spine_boxes(mask_path)
         except Exception as e:
             print(f'Error processing {mask_path}: {e}')
             continue
         
         # Save annotations
         with open(annotation_dir / f'{filename}.txt', 'w') as f:
-            for class_id, x_center, y_center, width, height in boxes:
-                f.write(f'{class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n')
+            for class_id, x_min, y_min, x_max, y_max in boxes:
+                f.write(f'{class_id} {x_min} {y_min} {x_max} {y_max}\n')
         
         if viz_dir is not None: # Create visualization if requested
             visualize_spine_segmentation_and_boxes(viz_dir / f'{filename}_visualization.png', original_path, mask_path, boxes)
@@ -173,11 +150,14 @@ if __name__ == '__main__':
     # batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir)
     
     mask_dir, original_dir, annotation_dir, viz_dir = Path(mask_dir), Path(original_dir), Path(annotation_dir), Path(viz_dir)
+    if viz_dir: # Create output directory for visualizations if it doesn't exist
+        viz_dir.mkdir(parents=True, exist_ok=True) 
+
     for mask_path in tqdm(list(mask_dir.glob('*.png'))): # Read boxes from each file and visualize them
         filename = mask_path.stem
         with open(annotation_dir / f'{filename}.txt', 'r') as f: # Read the bounding boxes from the annotation file
             visualize_spine_segmentation_and_boxes(
                 viz_dir / f'{filename}_visualization.png',
                 original_dir / f'{filename}.jpg', 
-                mask_path, boxes=[list(map(float, line.strip().split())) for line in f.readlines()]
+                mask_path, boxes=[list(map(int, line.strip().split())) for line in f.readlines()]
             )
