@@ -1,10 +1,9 @@
-import os
 import cv2
-import glob
-import numpy as np
 import matplotlib.pyplot as plt
 from skimage import measure
+from pathlib import Path
 from tqdm import tqdm
+
 
 def extract_spine_yolo_boxes(mask_path, image_width=None, image_height=None, padding=0):
     '''
@@ -141,66 +140,44 @@ def batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir=Non
         viz_dir (str): Directory to save visualizations. If None, no visualizations are saved.
     '''
     # Create output directories if they don't exist and get all mask files
-    os.makedirs(annotation_dir, exist_ok=True)
-    os.makedirs(viz_dir, exist_ok=True) if viz_dir else None
-    mask_files = glob.glob(os.path.join(mask_dir, '*.png')) + glob.glob(os.path.join(mask_dir, '*.jpg'))
+    mask_dir, original_dir, annotation_dir, viz_dir = Path(mask_dir), Path(original_dir), Path(annotation_dir), Path(viz_dir)
+    annotation_dir.mkdir(parents=True, exist_ok=True)
+    if viz_dir: viz_dir.mkdir(parents=True, exist_ok=True)
     
-    for mask_path in tqdm(mask_files):
-        # Get the filename without extension
-        filename = os.path.basename(mask_path)
-        name, ext = os.path.splitext(filename)
-        
-        # Find the corresponding original image
-        original_path = os.path.join(original_dir, name + '.jpg')
-        if original_path is None:
-            print(f'Warning: No matching original image found for {filename}')
-            continue
+    for mask_path in tqdm(list(mask_dir.glob('*.png'))):
+        filename = mask_path.stem
+        original_path = original_dir / f'{filename}.jpg'
         
         # Extract bounding boxes
         original_img = cv2.imread(original_path)
         image_height, image_width = original_img.shape[:2]
-        try:
-            boxes = extract_spine_yolo_boxes(mask_path, image_width, image_height)
+        try: boxes = extract_spine_yolo_boxes(mask_path, image_width, image_height)
         except Exception as e:
             print(f'Error processing {mask_path}: {e}')
             continue
         
         # Save annotations
-        annotation_path = os.path.join(annotation_dir, f'{name}.txt')
-        with open(annotation_path, 'w') as f:
+        with open(annotation_dir / f'{filename}.txt', 'w') as f:
             for class_id, x_center, y_center, width, height in boxes:
                 f.write(f'{class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n')
         
-        # Create visualization if requested
-        if viz_dir is not None:
-            visualization_path = os.path.join(viz_dir, f'{name}_visualization.png')
-            visualize_spine_segmentation_and_boxes(visualization_path, original_path, mask_path, boxes)
+        if viz_dir is not None: # Create visualization if requested
+            visualize_spine_segmentation_and_boxes(viz_dir / f'{filename}_visualization.png', original_path, mask_path, boxes)
 
 
 if __name__ == '__main__':
-    mask_dir = './dataset/mask'
-    original_dir = './dataset/image'
-    annotation_dir = './dataset/annotations'
-    viz_dir = './dataset/visualizations'
+    mask_dir = './datasets/ultrasound/mask'
+    original_dir = './datasets/ultrasound/image'
+    annotation_dir = './datasets/ultrasound/annotations'
+    viz_dir = './datasets/ultrasound/visualizations'
     # batch_process_spine_data(mask_dir, original_dir, annotation_dir, viz_dir)
-
-    # Read boxes from each file and visualize them
-    for mask_path in tqdm(glob.glob(os.path.join(mask_dir, '*.png')) + glob.glob(os.path.join(mask_dir, '*.jpg'))):
-        # Get the filename without extension
-        filename = os.path.basename(mask_path)
-        name, ext = os.path.splitext(filename)
-        
-        # Find the corresponding original image
-        original_path = os.path.join(original_dir, name + '.jpg')
-        if original_path is None:
-            print(f'Warning: No matching original image found for {filename}')
-            continue
-        
-        # Read the bounding boxes from the annotation file
-        annotation_path = os.path.join(annotation_dir, f'{name}.txt')
-        with open(annotation_path, 'r') as f:
-            boxes = [list(map(float, line.strip().split())) for line in f.readlines()]
-        
-        # Create visualization
-        visualization_path = os.path.join(viz_dir, f'{name}_visualization.png')
-        visualize_spine_segmentation_and_boxes(visualization_path, original_path, mask_path, boxes)
+    
+    mask_dir, original_dir, annotation_dir, viz_dir = Path(mask_dir), Path(original_dir), Path(annotation_dir), Path(viz_dir)
+    for mask_path in tqdm(list(mask_dir.glob('*.png'))): # Read boxes from each file and visualize them
+        filename = mask_path.stem
+        with open(annotation_dir / f'{filename}.txt', 'r') as f: # Read the bounding boxes from the annotation file
+            visualize_spine_segmentation_and_boxes(
+                viz_dir / f'{filename}_visualization.png',
+                original_dir / f'{filename}.jpg', 
+                mask_path, boxes=[list(map(float, line.strip().split())) for line in f.readlines()]
+            )
