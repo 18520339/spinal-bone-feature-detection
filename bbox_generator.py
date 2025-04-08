@@ -45,7 +45,7 @@ def extract_spine_boxes(mask_path, padding=0):
     return bounding_boxes
 
 
-def visualize_spine_segmentation_and_boxes(output_path, image_path, mask_path, boxes):
+def visualize_spine_segmentation_and_boxes(output_path, image_path, mask_path, boxes, box_thickness=5, font_thickness=5, font_scale=2.0):
     '''
     Create a visualization showing the original image, mask, and detected bounding boxes.
     
@@ -69,16 +69,14 @@ def visualize_spine_segmentation_and_boxes(output_path, image_path, mask_path, b
     for idx, (class_id, x_min, y_min, x_max, y_max) in enumerate(boxes):
         # color = (220, 20, 60) if class_id == 0 else (46, 204, 113)  # Red for Thoracic, Green for Lumbar
         color = (240, 128, 128) if class_id == 0 else (144, 238, 144) # Red for Thoracic, Green for Lumbar
-        cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), color, 5) # Draw the bounding box
+        cv2.rectangle(image_with_boxes, (int(x_min), int(y_min)), (int(x_max), int(y_max)), color, box_thickness) # Draw the bounding box
         
         # Calculate center position for the label and text position to center it
-        label_x = x_min + (x_max - x_min) // 2
-        label_y = y_min + (y_max - y_min) // 2
-        font_scale, font_thickness = 2.0, 5
-        
         (text_width, text_height), _ = cv2.getTextSize(f'{idx + 1}', cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
-        text_x = label_x - text_width // 2
-        text_y = label_y + text_height // 2
+        label_x = x_min + (x_max - x_min) / 2
+        label_y = y_min + (y_max - y_min) / 2
+        text_x = int(label_x - text_width / 2)
+        text_y = int(label_y + text_height / 2)
         
         # Draw the label text in the center of the box
         cv2.putText(
@@ -159,5 +157,6 @@ if __name__ == '__main__':
             visualize_spine_segmentation_and_boxes(
                 viz_dir / f'{filename}_visualization.png',
                 original_dir / f'{filename}.jpg', 
-                mask_path, boxes=[list(map(int, line.strip().split())) for line in f.readlines()]
+                mask_path, boxes=[list(map(float, line.strip().split())) for line in f.readlines()],
+                # box_thickness=2, font_thickness=2, font_scale=0.5
             )
