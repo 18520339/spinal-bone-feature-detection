@@ -22,12 +22,12 @@ class UltrasoundPreprocessor:
         self.annotations_dir = Path(self.config['data']['annotations_dir'])
         self.processed_images_dir = Path(self.config['data']['processed_images_dir'])
         self.processed_annotations_dir = Path(self.config['data']['processed_annotations_dir'])
-        self.split_info_dir = Path(self.config['data']['split_info_dir'])
+        self.metadata_dir = Path(self.config['data']['metadata_dir'])
 
         # Create directories if they don't exist
         self.processed_images_dir.mkdir(parents=True, exist_ok=True)
         self.processed_annotations_dir.mkdir(parents=True, exist_ok=True)
-        self.split_info_dir.mkdir(parents=True, exist_ok=True)
+        self.metadata_dir.mkdir(parents=True, exist_ok=True)
 
 
     def load_image(self, image_path): # Load an image in grayscale
@@ -101,11 +101,11 @@ class UltrasoundPreprocessor:
             f for f in self.images_dir.glob('*') 
             if f.suffix in ['.jpg', 'jpeg', '.png']
         ])
-        image_paths = [] 
+        image_names = []
 
         for image_path in tqdm(image_files): # Process each image and its corresponding annotation file
             image_name = image_path.stem
-            image_paths.append(image_path.name)
+            image_names.append(image_name)
             annotation_path = self.annotations_dir / f'{image_name}.txt'
 
             if not annotation_path.exists():
@@ -118,11 +118,16 @@ class UltrasoundPreprocessor:
                 output_annotation_path = self.processed_annotations_dir / f'{image_name}.txt'
             )
         
-        # Create train/val splits
-        train_paths, val_paths = train_test_split(image_paths, test_size=self.config['evaluation']['val_split'], random_state=42)
-        with open(self.split_info_dir / 'splits.yaml', 'w') as f: # Save splits to metadata
-            yaml.dump({'train': train_paths, 'val': val_paths}, f)
-        print(f'Dataset splits: Train={len(train_paths)}, Val={len(val_paths)}')
+        # Create train/val splits and compute mean & std std for each channel across training images
+        train_names, val_names = train_test_split(image_names, test_size=self.config['evaluation']['val_split'], random_state=42)
+        train_images = [np.load(self.processed_images_dir  / f'{image_name}.npy') for image_name in train_names] # List of (H, W, 2)
+        train_images = np.stack(train_images, axis=0) # Shape: (N, H, W, 2)
+        mean = np.mean(train_images, axis=(0, 1, 2))  # Shape: (2,)
+        std = np.std(train_images, axis=(0, 1, 2))    # Shape: (2,)
+
+        with open(self.metadata_dir / 'splits.yaml', 'w') as f: # Save splits to metadata
+            yaml.dump({'train': train_names, 'val': val_names, 'mean': mean.tolist(), 'std': std.tolist()}, f)
+        print(f'Dataset splits: Train={len(train_names)}, Val={len(val_names)}, mean={mean}, std={std}')
 
 
 if __name__ == '__main__':
