@@ -119,7 +119,7 @@ class UltrasoundPreprocessor:
             )
         
         # Create train/val splits and compute mean & std std for each channel across training images
-        train_names, val_names = train_test_split(image_names, test_size=self.config['evaluation']['val_split'], random_state=42)
+        train_names, val_names = train_test_split(image_names, test_size=self.config['data']['val_split'], random_state=42)
         train_images = [np.load(self.processed_images_dir  / f'{image_name}.npy') for image_name in train_names] # List of (H, W, 2)
         train_images = np.stack(train_images, axis=0) # Shape: (N, H, W, 2)
         mean = np.mean(train_images, axis=(0, 1, 2))  # Shape: (2,)
