@@ -1,7 +1,7 @@
 class BoxPointsConverter:
     
     @staticmethod
-    def voc_to_yolo(box):
+    def xyxy_to_cxcywh(box):
         # Convert [x_min, y_min, x_max, y_max] to [x_center, y_center, width, height]
         class_id, x_min, y_min, x_max, y_max = box
         width = x_max - x_min
@@ -11,7 +11,7 @@ class BoxPointsConverter:
         return [class_id, x_center, y_center, width, height]
     
     @staticmethod
-    def voc_to_coco(box):
+    def xyxy_to_xywh(box):
         # Convert [x_min, y_min, x_max, y_max] to [x_min, y_min, width, height]
         class_id, x_min, y_min, x_max, y_max = box
         width = x_max - x_min
@@ -19,7 +19,7 @@ class BoxPointsConverter:
         return [class_id, x_min, y_min, width, height]
 
     @staticmethod
-    def yolo_to_voc(box):
+    def cxcywh_to_xyxy(box):
         # Convert [x_center, y_center, width, height] to [x_min, y_min, x_max, y_max]
         class_id, x_center, y_center, width, height = box
         x_min = x_center - width / 2
@@ -29,7 +29,7 @@ class BoxPointsConverter:
         return [class_id, x_min, y_min, x_max, y_max]
     
     @staticmethod
-    def yolo_to_coco(box):
+    def cxcywh_to_xywh(box):
         # Convert [x_center, y_center, width, height] to [x_min, y_min, width, height]
         class_id, x_center, y_center, width, height = box
         x_min = x_center - width / 2
@@ -37,7 +37,7 @@ class BoxPointsConverter:
         return [class_id, x_min, y_min, width, height]
     
     @staticmethod
-    def coco_to_yolo(box):
+    def xywh_to_cxcywh(box):
         # Convert [x_min, y_min, width, height] to [x_center, y_center, width, height]
         class_id, x_min, y_min, width, height = box
         x_center = x_min + width / 2
@@ -45,7 +45,7 @@ class BoxPointsConverter:
         return [class_id, x_center, y_center, width, height]
     
     @staticmethod
-    def coco_to_voc(box):
+    def xywh_to_xyxy(box):
         # Convert [x_min, y_min, width, height] to [x_min, y_min, x_max, y_max]
         class_id, x_min, y_min, width, height = box
         x_max = x_min + width
