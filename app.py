@@ -1,16 +1,16 @@
+import cv2
+import numpy as np
 import streamlit as st
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+from PIL import Image
+
 import torch
 import torch.nn.functional as F
-import numpy as np
-import cv2
-from PIL import Image
-import matplotlib.pyplot as plt
-from pathlib import Path
 from scipy.interpolate import CubicSpline
-from io import BytesIO
 from preprocessor import UltrasoundPreprocessor
 from model import MultiTaskModel
-import seaborn as sns
 
 # Set page configuration for a professional look
 st.set_page_config(
