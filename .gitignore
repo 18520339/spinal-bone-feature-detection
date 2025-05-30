@@ -1,3 +1,4 @@
 datasets/
 backup/
 __pycache__
+*.pth
