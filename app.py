@@ -330,7 +330,7 @@ if uploaded_file is not None:
         if show_gt and gt_boxes is not None and gt_labels is not None:
             for box, label in zip(gt_boxes, gt_labels):
                 x_min, y_min, x_max, y_max = box.astype(int)
-                color = (0, 0, 255)  # Blue for ground truth
+                color = (255, 0, 0) if label == 0 else (0, 255, 0)
                 cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), color, 2)
                 label_text = "GT: " + ("Thoracic" if label == 0 else "Lumbar")
                 cv2.putText(image_with_boxes, label_text, (x_min, y_min - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
@@ -338,9 +338,9 @@ if uploaded_file is not None:
         if show_pred and len(pred_boxes_scaled) > 0:
             for box, label, score in zip(pred_boxes_scaled, pred_labels, pred_scores):
                 x_min, y_min, x_max, y_max = box.astype(int)
-                color = (255, 0, 0) if label == 0 else (0, 255, 0)
+                color = (0, 255, 255) if label == 0 else (255, 215, 0)
                 cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), color, 3)
-                label_text = f"{'Thoracic' if label == 0 else 'Lumbar'} ({score:.2f})"
+                label_text = f"{'Thoracic' if label == 0 else 'Lumbar'} ({score:.4f})"
                 cv2.putText(image_with_boxes, label_text, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
         if show_cobb and curve_points is not None:
