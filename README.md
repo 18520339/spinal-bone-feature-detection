@@ -1,1 +1,1 @@
-# spinal-bone-feature-detection
+![](images/functional_block_diagram.svg)

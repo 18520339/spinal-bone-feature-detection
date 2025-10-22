@@ -1,0 +1,389 @@
+<svg viewBox="0 0 1000 1550" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#f8f9fa" rx="10" ry="10"/>
+  <rect x="20" y="20" width="960" height="1510" fill="#ffffff" stroke="#e0e0e0" stroke-width="2" rx="8" ry="8"/>
+  
+  <!-- Title Box -->
+  <rect x="50" y="40" width="900" height="80" fill="#1a365d" rx="6" ry="6"/>
+  <text x="500" y="80" font-family="Arial, sans-serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#ffffff">Vertebrae Detection Methodology for Scoliosis Assessment</text>
+  <text x="500" y="110" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#ffffff">Combining CNN and GNN for Enhanced Detection in Noisy Ultrasound Images</text>
+  
+  <!-- Project Structure Box -->
+  <g>
+    <rect x="50" y="140" width="900" height="110" fill="#ebf8ff" stroke="#63b3ed" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="165" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2c5282">Project Work Packages (WP)</text>
+    
+    <!-- Work Package Timeline -->
+    <line x1="70" y1="200" x2="930" y2="200" stroke="#63b3ed" stroke-width="3"/>
+    
+    <!-- Work Package Nodes -->
+    <circle cx="130" cy="200" r="15" fill="#2b6cb0"/>
+    <circle cx="290" cy="200" r="15" fill="#2b6cb0"/>
+    <circle cx="450" cy="200" r="15" fill="#2b6cb0"/>
+    <circle cx="610" cy="200" r="15" fill="#2b6cb0"/>
+    <circle cx="770" cy="200" r="15" fill="#2b6cb0"/>
+    
+    <!-- Work Package Labels -->
+    <text x="130" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c5282">WP1</text>
+    <text x="130" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Data Preparation</text>
+    
+    <text x="290" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c5282">WP2</text>
+    <text x="290" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Preprocessing</text>
+    <text x="290" y="245" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Augmentation</text>
+    
+    <text x="450" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c5282">WP3</text>
+    <text x="450" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Baseline and</text>
+    <text x="450" y="245" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">SOTA Experiments</text>
+    
+    <text x="610" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c5282">WP4</text>
+    <text x="610" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">GNN-Based Model</text>
+    <text x="610" y="245" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Development</text>
+    
+    <text x="770" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c5282">WP5</text>
+    <text x="770" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Evaluation and</text>
+    <text x="770" y="245" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2c5282">Curvature Assessment</text>
+  </g>
+  
+  <!-- ======= PART 1: DATA PREPARATION ======= -->
+  <g>
+    <rect x="50" y="260" width="900" height="180" fill="#edf2f7" stroke="#4299e1" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="285" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2c5282">Data Preparation and Preprocessing</text>
+    
+    <!-- Input Dataset Box -->
+    <rect x="70" y="300" width="170" height="120" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="155" y="320" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Input Dataset</text>
+    <text x="155" y="345" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• 50 Ultrasound Images</text>
+    <text x="155" y="365" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• 50 Segmentation Masks for</text>
+    <text x="155" y="380" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">  Thoracic/Lumbar Vertebrae</text>
+    <text x="155" y="400" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Extra Data (59 samples):</text>
+    <text x="155" y="415" font-family="Arial, sans-serif" font-size="12" font-style="italic" text-anchor="middle">  Not experiment yet</text>
+    
+    <!-- Mask Conversion Box -->
+    <rect x="270" y="300" width="170" height="120" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="355" y="320" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Annotation Creation</text>
+    <text x="355" y="345" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Convert masks to boxes</text>
+    <text x="355" y="365" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Sort regions by y-coordinate</text>
+    <text x="355" y="385" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• 50 VOC-based txt files:</text>
+    <text x="355" y="400" font-family="Arial, sans-serif" font-size="12" font-style="italic" text-anchor="middle">  class xmin ymin xmax ymax</text>
+    <text x="355" y="414" font-family="Arial, sans-serif" font-size="11" font-style="italic" text-anchor="middle">Class: 0=Thoracic, 1=Lumbar</text>
+    
+    <!-- Preprocessing Pipeline -->
+    <rect x="470" y="300" width="460" height="120" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="700" y="320" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Preprocessing Pipeline (Load in Grayscale)</text>
+    
+    <!-- Preprocessing Steps -->
+    <rect x="480" y="335" width="100" height="75" fill="#ebf8ff" stroke="#3182ce" stroke-width="1" rx="3" ry="3"/>
+    <text x="530" y="350" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Denoising</text>
+    <text x="530" y="370" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Non-local means</text>
+    <text x="530" y="385" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Filter strength: h=10</text>
+    <text x="530" y="400" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Reduce speckle</text>
+    
+    <rect x="590" y="335" width="100" height="75" fill="#ebf8ff" stroke="#3182ce" stroke-width="1" rx="3" ry="3"/>
+    <text x="640" y="350" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">CLAHE</text>
+    <text x="640" y="370" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Clip limit = 2.0</text>
+    <text x="640" y="385" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Grid size = 8×8</text>
+    <text x="640" y="400" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Enhance contrast</text>
+    
+    <rect x="700" y="335" width="110" height="75" fill="#ebf8ff" stroke="#3182ce" stroke-width="1" rx="3" ry="3"/>
+    <text x="755" y="350" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Edge Detection</text>
+    <text x="755" y="370" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Sobel filter for edge map</text>
+    <text x="755" y="385" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">G = sqrt(Gx² + Gy²)</text>
+    <text x="755" y="400" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Stacked as 2nd channel</text>
+    
+    <rect x="820" y="335" width="100" height="75" fill="#ebf8ff" stroke="#3182ce" stroke-width="1" rx="3" ry="3"/>
+    <text x="870" y="350" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Resize and Norm</text>
+    <text x="870" y="370" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">448×224 pixels</text>
+    <text x="870" y="385" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">2-channel input</text>
+    <text x="870" y="400" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">[0, 1] + standardize</text>
+    
+    <!-- Arrows -->
+    <line x1="240" y1="360" x2="270" y2="360" stroke="#3182ce" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="440" y1="360" x2="470" y2="360" stroke="#3182ce" stroke-width="2" marker-end="url(#arrowhead)"/>
+  </g>
+  
+  <!-- ======= PART 2: DATA AUGMENTATION ======= -->
+  <g>
+    <rect x="50" y="450" width="900" height="140" fill="#faf5ff" stroke="#9f7aea" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="475" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#553c9a">Data Augmentation (Only for Training Data | 50% Chance for each Transformation)</text>
+    
+    <!-- Augmentation Techniques Box -->
+    <rect x="70" y="490" width="210" height="80" fill="#e9d8fd" stroke="#805ad5" stroke-width="2" rx="5" ry="5"/>
+    <text x="175" y="510" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#553c9a">Speckle Noise</text>
+    <text x="175" y="530" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Gaussian noise</text>
+    <text x="175" y="545" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• speckle_noise_std = 0.05</text>
+    <text x="175" y="560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Simulate ultrasound artifacts</text>
+    
+    <rect x="290" y="490" width="210" height="80" fill="#e9d8fd" stroke="#805ad5" stroke-width="2" rx="5" ry="5"/>
+    <text x="395" y="510" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#553c9a">Elastic Transformations</text>
+    <text x="395" y="530" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• α=50, σ=5, approximate=False</text>
+    <text x="395" y="545" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Warp image grid, also adjust boxes</text>
+    <text x="395" y="560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Mimic spinal curvature variations</text>
+    
+    <rect x="510" y="490" width="210" height="80" fill="#e9d8fd" stroke="#805ad5" stroke-width="2" rx="5" ry="5"/>
+    <text x="615" y="510" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#553c9a">Brightness and Contrast</text>
+    <text x="615" y="530" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Brightness range: [0.9, 1.1]</text>
+    <text x="615" y="545" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Contrast range: [0.8, 1.2]</text>
+    <text x="615" y="560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Emulate imaging conditions</text>
+    
+    <rect x="730" y="490" width="210" height="80" fill="#e9d8fd" stroke="#805ad5" stroke-width="2" rx="5" ry="5"/>
+    <text x="835" y="510" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#553c9a">Rotation</text>
+    <text x="835" y="530" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Up to 10° (Small angles)</text>
+    <text x="835" y="545" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Minor pose variations</text>
+    <text x="835" y="560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Preserve anatomical structure</text>
+  </g>
+  
+  <!-- ======= PART 3: BASELINE AND SOTA COMPARISON ======= -->
+  <g>
+    <rect x="50" y="600" width="280" height="150" fill="#f0fff4" stroke="#68d391" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="625" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#276749">Models to Compare</text>
+    
+    <rect x="70" y="640" width="80" height="90" fill="#c6f6d5" stroke="#48bb78" stroke-width="2" rx="5" ry="5"/>
+    <text x="110" y="670" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#276749">Faster-RCNN</text>
+    <text x="110" y="690" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Two-Stage</text>
+    <text x="110" y="705" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Baseline</text>
+    
+    <rect x="160" y="640" width="80" height="90" fill="#c6f6d5" stroke="#48bb78" stroke-width="2" rx="5" ry="5"/>
+    <text x="200" y="670" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#276749">YOLOv11</text>
+    <text x="200" y="690" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">One-Stage</text>
+    <text x="200" y="705" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Detector</text>
+    
+    <rect x="250" y="640" width="60" height="90" fill="#c6f6d5" stroke="#48bb78" stroke-width="2" rx="5" ry="5"/>
+    <text x="280" y="670" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#276749">RT-DETR</text>
+    <text x="280" y="690" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Transformer</text>
+    <text x="280" y="705" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">Detector</text>
+  </g>
+  
+  <!-- ======= PART 4: MODEL ARCHITECTURE ======= -->
+  <g>
+    <rect x="340" y="600" width="610" height="450" fill="#fffaf0" stroke="#ed8936" stroke-width="2" rx="6" ry="6"/>
+    <text x="360" y="625" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#c05621">GNN-Based Model Architecture</text>
+    
+    <!-- Primary Model Box -->
+    <rect x="360" y="640" width="570" height="160" fill="#feebc8" stroke="#dd6b20" stroke-width="2" rx="5" ry="5"/>
+    <text x="645" y="660" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#c05621">Multi-Task Learning Model</text>
+    
+    <!-- Model Tasks -->
+    <rect x="380" y="675" width="150" height="110" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="455" y="695" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">Task 1</text>
+    <text x="455" y="720" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c05621">Object Localization</text>
+    <text x="455" y="740" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Predict boxes using FCN</text>
+    <text x="455" y="755" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Box Regression from ROIAlign</text>
+    <text x="455" y="770" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• 4 output features (xyxy) </text>
+    
+    <rect x="540" y="675" width="150" height="110" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="615" y="695" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">Task 2</text>
+    <text x="615" y="720" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c05621">Object Clustering</text>
+    <text x="615" y="740" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Classify box (Thoracic/Lumbar)</text>
+    <text x="615" y="755" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• GNN for spatial relationships</text>
+    <text x="615" y="770" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">  between ROIs (nodes)</text>
+    
+    <rect x="700" y="675" width="220" height="110" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="810" y="695" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">Why GNN?</text>
+    <text x="810" y="715" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">CNN/Transformer treat each batch's sample</text>
+    <text x="810" y="730" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">independently. GNN enrich representations by:</text>
+    <text x="810" y="745" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Extract relationships in same batch</text>
+    <text x="810" y="760" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Information sharing between ROIs</text>
+    <text x="810" y="775" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Associate noisy samples with cleaner ones</text>
+    
+    <!-- Component Boxes -->
+    <rect x="360" y="810" width="240" height="110" fill="#fff3cd" stroke="#dd6b20" stroke-width="2" rx="5" ry="5"/>
+    <text x="480" y="830" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">ResNet-18 Backbone</text>
+    <text x="480" y="850" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Modify 1st Conv for 2-channel input</text>
+    <text x="480" y="865" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Input: Grayscale image + Edge map</text>
+    <text x="480" y="880" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Output: (B, 512, H/32, W/32)</text>
+    <text x="480" y="895" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• 1×1 Conv Projection → 64 channels</text>
+    <text x="480" y="910" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Final: (B, 64, H/32, W/32)</text>
+    
+    <rect x="610" y="810" width="320" height="110" fill="#fff3cd" stroke="#dd6b20" stroke-width="2" rx="5" ry="5"/>
+    <text x="770" y="830" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">ROIAlign</text>
+    <text x="770" y="850" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Extract fixed-size features per bounding box</text>
+    <text x="770" y="865" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Uses bilinear interpolation (avoids quantization)</text>
+    <text x="770" y="880" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• 5×5 grid per ROI, 1/32 spatial scale</text>
+    <text x="770" y="895" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Output: 64×5×5 = 1600 dimensions per box</text>
+    <text x="770" y="910" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Preserves spatial accuracy crucial for vertebrae</text>
+    
+    <rect x="360" y="930" width="280" height="110" fill="#feebc8" stroke="#dd6b20" stroke-width="2" rx="5" ry="5"/>
+    <text x="500" y="950" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">GNN Components</text>
+    
+    <rect x="370" y="960" width="130" height="70" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="435" y="975" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#c05621">EdgeNet</text>
+    <text x="435" y="990" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Computes similarity</text>
+    <text x="435" y="1005" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• S_ij = σ(Conv(|f_i - f_j|))</text>
+    <text x="435" y="1020" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Auto learn edge weights</text>
+
+    <rect x="505" y="960" width="130" height="70" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="570" y="975" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#c05621">NodeNet</text>
+    <text x="570" y="990" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Aggregates features</text>
+    <text x="570" y="1005" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• f̃_i = Σ_j(S̃_ij · f_j) </text>
+    <text x="570" y="1020" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• [f_i; f̃_i] → Conv → logits</text>
+
+    <rect x="650" y="930" width="280" height="110" fill="#feebc8" stroke="#dd6b20" stroke-width="2" rx="5" ry="5"/>
+    <text x="790" y="950" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c05621">Multi-Task Loss</text>
+    <text x="790" y="970" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c05621">L_total = L_box + L_cls + L_edge</text>
+    
+    <rect x="660" y="980" width="85" height="50" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="702" y="995" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Box Loss</text>
+    <text x="702" y="1010" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">DIoU/CIoU Loss</text>
+    <text x="702" y="1022" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">Bbox optimization</text>
+    
+    <rect x="750" y="980" width="85" height="50" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="792" y="995" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Class Loss</text>
+    <text x="792" y="1010" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">Cross-Entropy</text>
+    <text x="792" y="1022" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">T/L classification</text>
+    
+    <rect x="840" y="980" width="85" height="50" fill="#fffaf0" stroke="#dd6b20" stroke-width="1" rx="3" ry="3"/>
+    <text x="882" y="995" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Edge Loss</text>
+    <text x="882" y="1010" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">Binary CE</text>
+    <text x="882" y="1022" font-family="Arial, sans-serif" font-size="9" text-anchor="middle">Edge supervision</text>
+  </g>
+  
+  <!-- ======= PART 5: TRAINING SETUP ======= -->
+  <g>
+    <rect x="50" y="1060" width="900" height="120" fill="#ebf8ff" stroke="#4299e1" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="1085" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2c5282">Training Setup</text>
+    
+    <!-- Training Parameters -->
+    <rect x="70" y="1095" width="180" height="75" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="160" y="1115" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Optimization</text>
+    <text x="160" y="1135" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• AdamW optimizer</text>
+    <text x="160" y="1150" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Learning rate: 2e-4</text>
+    <text x="160" y="1165" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• 1000 epochs, batch size = 32</text>
+    
+    <!-- Dataset Split -->
+    <rect x="265" y="1095" width="220" height="75" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="375" y="1115" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Dataset Split</text>
+    <text x="375" y="1135" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Training: 84% (42 images)</text>
+    <text x="375" y="1150" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Validation: 16% (8 images)</text>
+    <text x="375" y="1165" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Save best model (lowest val loss)</text>
+    
+    <!-- Monitoring -->
+    <rect x="500" y="1095" width="200" height="75" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="600" y="1115" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Monitoring</text>
+    <text x="600" y="1135" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• TensorBoard logging</text>
+    <text x="600" y="1150" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Track losses (box, cls, edge)</text>
+    <text x="600" y="1165" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Validation metrics</text>
+    
+    <!-- Evaluation Metrics -->
+    <rect x="715" y="1095" width="215" height="75" fill="#bee3f8" stroke="#3182ce" stroke-width="2" rx="5" ry="5"/>
+    <text x="825" y="1115" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#2b6cb0">Evaluation Metrics</text>
+    <text x="825" y="1135" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• mAP@50, F1-score</text>
+    <text x="825" y="1150" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Confusion Matrix</text>
+    <text x="825" y="1165" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">• Precision-Recall Curve</text>
+  </g>
+
+  <!-- Performance Results Box -->
+  <g>
+    <rect x="50" y="760" width="280" height="290" fill="#e6fffa" stroke="#38b2ac" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="785" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2c7a7b">Models Evaluation</text>
+    
+    <rect x="70" y="800" width="240" height="110" fill="#b2f5ea" stroke="#319795" stroke-width="2" rx="5" ry="5"/>
+    <text x="190" y="820" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c7a7b">Detection (Outperform)</text>
+    <text x="190" y="840" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• mAP@75: 0.54 (DIoU), 0.61 (CIoU)</text>
+    <text x="190" y="855" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• mAP@50: 0.97 (DIoU), 0.96 (CIoU)</text>
+    <text x="190" y="870" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• vs. Faster R-CNN (0.86): +11%</text>
+    <text x="190" y="885" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• vs. YOLOv11 (0.95): +2%</text>
+    <text x="190" y="900" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• vs. RT-DETR (0.93): +4%</text>
+    
+    <rect x="70" y="925" width="240" height="110" fill="#b2f5ea" stroke="#319795" stroke-width="2" rx="5" ry="5" />
+    <text x="190" y="945" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c7a7b">Classification (Perfect results)</text>
+    <text x="190" y="965" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• Accuracy: 100%, Edge loss: ~0</text>
+    <text x="190" y="980" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• F1: 100% for both Thoracic and Lumbar</text>
+    <text x="190" y="995" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• vs. Faster R-CNN (0.32): +68%</text>
+    <text x="190" y="1010" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• vs. YOLOv11 (0.92): +8%</text>
+    <text x="190" y="1025" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2c7a7b">• vs. RT-DETR (0.92): +8%</text>
+  </g>
+
+  <!-- ======= PART 6: GNN DETAILS DIAGRAM ======= -->
+  <g>
+    <rect x="50" y="1190" width="900" height="200" fill="#fff5f5" stroke="#fc8181" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="1215" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#c53030">GNN for Spatial Clustering</text>
+    
+    <!-- Visual representation of GNN process -->
+    <rect x="70" y="1230" width="280" height="150" fill="#fed7d7" stroke="#e53e3e" stroke-width="2" rx="5" ry="5"/>
+    <text x="210" y="1250" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c53030">Graph Construction</text>
+    
+    <!-- Nodes representing ROIs -->
+    <circle cx="130" cy="1290" r="20" fill="#feb2b2" stroke="#c53030" stroke-width="2"/>
+    <text x="130" y="1295" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#c53030">T1</text>
+    
+    <circle cx="200" cy="1280" r="20" fill="#feb2b2" stroke="#c53030" stroke-width="2"/>
+    <text x="200" y="1285" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#c53030">T2</text>
+    
+    <circle cx="260" cy="1320" r="20" fill="#feb2b2" stroke="#c53030" stroke-width="2"/>
+    <text x="260" y="1325" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#c53030">L1</text>
+    
+    <circle cx="160" cy="1340" r="20" fill="#feb2b2" stroke="#c53030" stroke-width="2"/>
+    <text x="160" y="1345" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#c53030">L2</text>
+    
+    <!-- Edges between nodes -->
+    <line x1="130" y1="1290" x2="200" y2="1280" stroke="#c53030" stroke-width="2"/>
+    <line x1="200" y1="1280" x2="260" y2="1320" stroke="#c53030" stroke-width="1" stroke-dasharray="5,3"/>
+    <line x1="260" y1="1320" x2="160" y2="1340" stroke="#c53030" stroke-width="2"/>
+    <line x1="130" y1="1290" x2="160" y2="1340" stroke="#c53030" stroke-width="1" stroke-dasharray="5,3"/>
+    <line x1="130" y1="1290" x2="260" y2="1320" stroke="#c53030" stroke-width="1" stroke-dasharray="5,3"/>
+    
+    <!-- GNN Process -->
+    <rect x="360" y="1230" width="280" height="150" fill="#fed7d7" stroke="#e53e3e" stroke-width="2" rx="5" ry="5"/>
+    <text x="500" y="1250" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c53030">Message Passing</text>
+    
+    <text x="500" y="1280" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">Node features: 1600-dim vectors</text>
+    <text x="500" y="1300" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">Edge weights: S_ij = σ(Conv(|f_i - f_j|))</text>
+    <text x="500" y="1320" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">Aggregation: f̃_i = Σ_j S̃_ij·f_j</text>
+    <text x="500" y="1340" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">Classification: f_i + f̃_i → logits</text>
+    <text x="500" y="1360" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" font="#c53030">Solid lines: high similarity, Dashed: low</text>
+    
+    <!-- Edge Supervision -->
+    <rect x="650" y="1230" width="280" height="150" fill="#fed7d7" stroke="#e53e3e" stroke-width="2" rx="5" ry="5"/>
+    <text x="790" y="1250" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#c53030">Edge Supervision</text>
+    
+    <text x="790" y="1280" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">• Binary edge matrix from labels</text>
+    <text x="790" y="1300" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">• E_ij = 1 if class_i = class_j</text>
+    <text x="790" y="1320" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">• E_ij = 0 if class_i ≠ class_j</text>
+    <text x="790" y="1340" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">• Loss: BCE(S_ij, E_ij)</text>
+    <text x="790" y="1360" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#c53030">• Enforces anatomical structure</text>
+  </g>
+
+    <!-- ======= PART 7: BENEFITS and CONCLUSIONS ======= -->
+  <g>
+    <rect x="50" y="1400" width="900" height="120" fill="#f0f5ff" stroke="#7f9cf5" stroke-width="2" rx="6" ry="6"/>
+    <text x="70" y="1425" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#4c51bf">Benefits of Our Approach</text>
+    
+    <!-- Key Benefits Boxes -->
+    <rect x="70" y="1435" width="170" height="75" fill="#c3dafe" stroke="#667eea" stroke-width="2" rx="5" ry="5"/>
+    <text x="155" y="1455" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#4c51bf">Noise Robustness</text>
+    <text x="155" y="1475" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Information sharing</text>
+    <text x="155" y="1490" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Cleaner ROIs help noisy ones</text>
+    <text x="155" y="1505" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Leverages edge information</text>
+    
+    <rect x="250" y="1435" width="170" height="75" fill="#c3dafe" stroke="#667eea" stroke-width="2" rx="5" ry="5"/>
+    <text x="335" y="1455" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#4c51bf">Spatial Awareness</text>
+    <text x="335" y="1475" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Models anatomical structure</text>
+    <text x="335" y="1490" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• T/L ordering enforcement</text>
+    <text x="335" y="1505" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Improves vertebrae detection</text>
+    
+    <rect x="430" y="1435" width="170" height="75" fill="#c3dafe" stroke="#667eea" stroke-width="2" rx="5" ry="5"/>
+    <text x="515" y="1455" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#4c51bf">Small Dataset</text>
+    <text x="515" y="1475" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Effective with only 50 images</text>
+    <text x="515" y="1490" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Augmentation strategies</text>
+    <text x="515" y="1505" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Multi-task learning efficiency</text>
+    
+    <rect x="610" y="1435" width="170" height="75" fill="#c3dafe" stroke="#667eea" stroke-width="2" rx="5" ry="5"/>
+    <text x="695" y="1455" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#4c51bf">Clinical Relevance</text>
+    <text x="695" y="1475" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Non-invasive scoliosis detection</text>
+    <text x="695" y="1490" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Radiation-free assessment</text>
+    <text x="695" y="1505" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• Accurate curvature estimation</text>
+    
+    <rect x="790" y="1435" width="170" height="75" fill="#c3dafe" stroke="#667eea" stroke-width="2" rx="5" ry="5"/>
+    <text x="875" y="1455" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#4c51bf">Performance</text>
+    <text x="875" y="1475" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• +15% mAP vs. Faster-RCNN</text>
+    <text x="875" y="1490" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• +8% mAP vs. YOLOv11</text>
+    <text x="875" y="1505" font-family="Arial, sans-serif" font-size="10" text-anchor="middle">• 96% classification accuracy</text>
+  </g>
+
+  <!-- Arrow definitions -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3182ce"/>
+    </marker>
+  </defs>
+</svg>

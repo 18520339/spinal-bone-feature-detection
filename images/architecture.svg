@@ -1,0 +1,129 @@
+<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background and title -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f9fa" />
+      <stop offset="100%" stop-color="#e9ecef" />
+    </linearGradient>
+    <filter id="shadow" x="-0.5" y="-0.5" width="2" height="2">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+    </marker>
+  </defs>
+  
+  <rect width="1000" height="700" fill="url(#bg-gradient)" rx="10" ry="10"/>
+  
+  <text x="500" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Multi-Task GNN-based Object Detection Model Architecture</text>
+  
+  <!-- Input Section -->
+  <rect x="50" y="100" width="160" height="120" rx="5" ry="5" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" filter="url(#shadow)"/>
+  <text x="130" y="125" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">Input Processing</text>
+  <text x="130" y="150" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Speckle Noise Reduction</text>
+  <text x="130" y="170" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">CLAHE Enhancement</text>
+  <text x="130" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Edge Detection (H, W, 2)</text>
+  <text x="130" y="210" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Resize and Normalize</text>
+  
+  <!-- Backbone Section -->
+  <rect x="260" y="100" width="160" height="120" rx="5" ry="5" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" filter="url(#shadow)"/>
+  <text x="340" y="125" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">Backbone</text>
+  <text x="340" y="150" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">ResNet-18</text>
+  <text x="340" y="170" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Modify 1st Conv:</text>
+  <text x="340" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">  2 in, 64 out channels</text>
+  <text x="340" y="210" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Output: 512 channels</text>
+  
+  <!-- Feature Projection -->
+  <rect x="470" y="100" width="160" height="120" rx="5" ry="5" fill="#fff3e0" stroke="#ff9800" stroke-width="2" filter="url(#shadow)"/>
+  <text x="550" y="125" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">Feature Projection</text>
+  <text x="550" y="150" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">1×1 Conv Layer</text>
+  <text x="550" y="170" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">512 → 64 channels</text>
+  <text x="550" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Feature map size:</text>
+  <text x="550" y="210" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">  (H/32, W/32)</text>
+  
+  <!-- ROI Align Section -->
+  <rect x="680" y="100" width="160" height="120" rx="5" ry="5" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="760" y="125" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">ROIAlign</text>
+  <text x="760" y="150" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Output size: 5×5</text>
+  <text x="760" y="170" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Spatial scale: 1/32</text>
+  <text x="760" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Per-box features:</text>
+  <text x="760" y="210" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">  (64×5×5 = 1600)</text>
+  
+  <!-- Box Regression Branch -->
+  <rect x="580" y="280" width="160" height="100" rx="5" ry="5" fill="#ffebee" stroke="#f44336" stroke-width="2" filter="url(#shadow)"/>
+  <text x="660" y="305" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">Box Regressor</text>
+  <text x="660" y="330" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">FC: 1600→256→4</text>
+  <text x="660" y="350" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Predicts box coords</text>
+  <text x="660" y="370" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">from pooled features</text>
+  
+  <!-- GNN Section -->
+  <rect x="260" y="280" width="270" height="350" rx="5" ry="5" fill="#e0f7fa" stroke="#00bcd4" stroke-width="2" filter="url(#shadow)"/>
+  <text x="395" y="305" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">Graph Neural Network (GNN)</text>
+  
+  <!-- EdgeNet Subsection -->
+  <rect x="275" y="320" width="240" height="140" rx="5" ry="5" fill="#e1f5fe" stroke="#03a9f4" stroke-width="1.5"/>
+  <text x="395" y="340" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">EdgeNet</text>
+  <text x="395" y="365" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Input: (BS, 1600)</text>
+  <text x="395" y="385" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Compute pairwise feature</text>
+  <text x="395" y="405" font-family="Arial" font-size="12" text-anchor="middle" fill="#555"> differences (similarity/dissimilarity)</text>
+  <text x="395" y="425" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">1×1 Conv + BatchNorm + LeakyReLU</text>
+  <text x="395" y="445" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Output: Correlation matrix (BS×BS)</text>
+  
+  <!-- NodeNet Subsection -->
+  <rect x="275" y="470" width="240" height="140" rx="5" ry="5" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1.5"/>
+  <text x="395" y="490" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">NodeNet</text>
+  <text x="395" y="515" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Input: Node features and Edge weights</text>
+  <text x="395" y="535" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Message passing mechanism</text>
+  <text x="395" y="555" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Compute attention and aggregate</text>
+  <text x="395" y="575" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">1×1 Conv + BatchNorm + LeakyReLU</text>
+  <text x="395" y="595" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Output: Node embeddings</text>
+  
+  <!-- Loss Functions -->
+  <rect x="580" y="430" width="360" height="200" rx="5" ry="5" fill="#fafafa" stroke="#9e9e9e" stroke-width="2" filter="url(#shadow)"/>
+  <text x="760" y="455" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">Multi-Task Losses</text>
+  
+  <rect x="595" y="470" width="150" height="70" rx="5" ry="5" fill="#f1f8e9" stroke="#8bc34a" stroke-width="1.5"/>
+  <text x="670" y="495" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">Box Loss</text>
+  <text x="670" y="520" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Distance/Complete IoU</text>
+  
+  <rect x="595" y="550" width="150" height="70" rx="5" ry="5" fill="#f9fbe7" stroke="#cddc39" stroke-width="1.5"/>
+  <text x="670" y="575" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">Classification Loss</text>
+  <text x="670" y="600" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Categorical Cross-entropy</text>
+  
+  <rect x="775" y="470" width="150" height="150" rx="5" ry="5" fill="#fff8e1" stroke="#ffc107" stroke-width="1.5"/>
+  <text x="850" y="495" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">Edge Loss</text>
+  <text x="850" y="520" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Binary edge labels:</text>
+  <text x="850" y="540" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">- Same class/cluster = 1</text>
+  <text x="850" y="560" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">- Different class/cluster = 0</text>
+  <text x="850" y="580" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Masked selection</text>
+  <text x="850" y="600" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">BCE loss on affinity</text>
+  
+  <!-- Connections -->
+  <line x1="210" y1="160" x2="260" y2="160" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="420" y1="160" x2="470" y2="160" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="630" y1="160" x2="680" y2="160" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <line x1="760" y1="220" x2="760" y2="255" stroke="#666" stroke-width="2"/>
+  <line x1="760" y1="255" x2="395" y2="255" stroke="#666" stroke-width="2"/>
+  <line x1="395" y1="255" x2="395" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="760" y1="255" x2="660" y2="255" stroke="#666" stroke-width="2"/>
+  <line x1="660" y1="255" x2="660" y2="280" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <line x1="395" y1="630" x2="395" y2="650" stroke="#666" stroke-width="2"/>
+  <line x1="395" y1="650" x2="760" y2="650" stroke="#666" stroke-width="2"/>
+  <line x1="760" y1="650" x2="760" y2="630" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="660" y1="380" x2="660" y2="430" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- Data flow labels -->
+  <text x="235" y="150" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">(B,2,H,W)</text>
+  <text x="445" y="150" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">(B,512,H/32,W/32)</text>
+  <!-- <text x="655" y="150" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">(B,64,H/32,W/32)</text> -->
+  <text x="735" y="240" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">(N,1600)</text>
+  <text x="350" y="270" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">Node Features</text>
+  <text x="615" y="270" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">Pooled Features</text>
+  <text x="570" y="400" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">Edge weights (N×N)</text>
+  <text x="720" y="410" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">Box coordinates (N,4)</text>
+  <text x="560" y="550" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">Class predictions</text>
+  <text x="580" y="645" font-family="Arial" font-size="11" text-anchor="middle" fill="#666">Combined loss for backpropagation</text>
+</svg>
