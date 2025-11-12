@@ -1,27 +1,19 @@
-# Data paths
-data:
-  images_dir: "/tmp/ultrasound/image"
-  annotations_dir: "/tmp/ultrasound/annotations"
-  processed_images_dir: "/tmp/ultrasound/processed_images"
-  processed_annotations_dir: "/tmp/ultrasound/processed_annotations"
-  metadata_dir: "/tmp/ultrasound"
-  val_split: 0.15
+data: # Data paths
+    images_dir: '/tmp/ultrasound/image'
+    annotations_dir: '/tmp/ultrasound/annotations'
+    processed_images_dir: '/tmp/ultrasound/processed_images'
+    processed_annotations_dir: '/tmp/ultrasound/processed_annotations'
+    val_split: 0.15
 
-# Data preprocessing
-preprocessing:
-  image_size: [448, 224]  # Height, Width (adjust based on your images)
-  clahe_clip_limit: 2.0
-  clahe_tile_grid_size: [8, 8]
-  despeckle_h: 10
+preprocessing: # Data preprocessing
+    image_size: [448, 224] # Height, Width (adjust based on your images)
+    clahe_clip_limit: 2.0
+    clahe_tile_grid_size: [8, 8]
+    despeckle_h: 10
 
-# Data augmentation
-augmentation:
-  speckle_noise_std: 0.05
-  elastic_alpha: 50
-  elastic_sigma: 5
-  contrast_range: [0.8, 1.2]
-  brightness_range: [0.9, 1.1]
-
-# Evaluation
-evaluation:
-  iou_threshold: 0.5
+augmentation: # Data augmentation
+    speckle_noise_std: 0.05
+    elastic_alpha: 50
+    elastic_sigma: 5
+    contrast_range: [0.8, 1.2]
+    brightness_range: [0.9, 1.1]
