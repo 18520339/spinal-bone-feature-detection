@@ -3,7 +3,7 @@ import yaml
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 
 
 class UltrasoundPreprocessor:
@@ -22,12 +22,10 @@ class UltrasoundPreprocessor:
         self.annotations_dir = Path(self.config['data']['annotations_dir'])
         self.processed_images_dir = Path(self.config['data']['processed_images_dir'])
         self.processed_annotations_dir = Path(self.config['data']['processed_annotations_dir'])
-        self.metadata_dir = Path(self.config['data']['metadata_dir'])
 
         # Create directories if they don't exist
         self.processed_images_dir.mkdir(parents=True, exist_ok=True)
         self.processed_annotations_dir.mkdir(parents=True, exist_ok=True)
-        self.metadata_dir.mkdir(parents=True, exist_ok=True)
 
 
     def load_image(self, image_path): # Load an image in grayscale
@@ -96,10 +94,10 @@ class UltrasoundPreprocessor:
                 f.write(f'{int(annotation[0])} {annotation[1]:.6f} {annotation[2]:.6f} {annotation[3]:.6f} {annotation[4]:.6f}\n')
 
 
-    def preprocess_and_save_dataset(self): # Preprocess all images and annotations, and create train/val/test splits
+    def preprocess_and_save_dataset(self): # Preprocess all images and annotations, and create k-fold splits
         image_files = sorted([ # Get list of image files
             f for f in self.images_dir.glob('*') 
-            if f.suffix in ['.jpg', 'jpeg', '.png']
+            if f.suffix in ['.jpg', 'jpeg', '.png', '.bmp']
         ])
         image_names = []
 
@@ -118,18 +116,26 @@ class UltrasoundPreprocessor:
                 output_annotation_path = self.processed_annotations_dir / f'{image_name}.txt'
             )
         
-        # Create train/val splits and compute mean & std std for each channel across training images
-        train_names, val_names = train_test_split(image_names, test_size=self.config['data']['val_split'], random_state=42)
-        train_images = [np.load(self.processed_images_dir  / f'{image_name}.npy') for image_name in train_names] # List of (H, W, 2)
-        train_images = np.stack(train_images, axis=0) # Shape: (N, H, W, 2)
-        mean = np.mean(train_images, axis=(0, 1, 2))  # Shape: (2,)
-        std = np.std(train_images, axis=(0, 1, 2))    # Shape: (2,)
-
-        with open(self.metadata_dir / 'splits.yaml', 'w') as f: # Save splits to metadata
-            yaml.dump({'train': train_names, 'val': val_names, 'mean': mean.tolist(), 'std': std.tolist()}, f)
-        print(f'Dataset splits: Train={len(train_names)}, Val={len(val_names)}, mean={mean}, std={std}')
-
-
+        # Create K-fold splits and compute mean & std for each fold's training images
+        kfold = KFold(n_splits=self.config['data']['k_folds'], shuffle=True, random_state=42)
+        image_names = np.array(image_names)
+        
+        for fold_idx, (train_idx, val_idx) in enumerate(kfold.split(image_names)):
+            train_names = image_names[train_idx].tolist()
+            val_names = image_names[val_idx].tolist()
+            
+            # Load training images for this fold to compute mean & std
+            train_images = [np.load(self.processed_images_dir / f'{image_name}.npy') for image_name in train_names]
+            train_images = np.stack(train_images, axis=0) # Shape: (N, H, W, 2)
+            mean = np.mean(train_images, axis=(0, 1, 2))  # Shape: (2,)
+            std = np.std(train_images, axis=(0, 1, 2))    # Shape: (2,)
+            
+            # Save splits for this fold
+            fold_data = {'train': train_names, 'val': val_names, 'mean': mean.tolist(), 'std': std.tolist()}
+            with open(f'./kfolds/splits{fold_idx}.yaml', 'w') as f:
+                yaml.dump(fold_data, f)
+            print(f'Fold {fold_idx}: Train={len(train_names)}, Val={len(val_names)}, mean={mean}, std={std}')
+        
 if __name__ == '__main__':
     preprocessor = UltrasoundPreprocessor(config_path='config.yaml')
     preprocessor.preprocess_and_save_dataset()

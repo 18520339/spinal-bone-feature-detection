@@ -1,9 +1,9 @@
 data: # Data paths
-    images_dir: '/tmp/ultrasound/image'
-    annotations_dir: '/tmp/ultrasound/annotations'
-    processed_images_dir: '/tmp/ultrasound/processed_images'
-    processed_annotations_dir: '/tmp/ultrasound/processed_annotations'
-    val_split: 0.15
+    images_dir: './datasets/ultrasound/image'
+    annotations_dir: './datasets/ultrasound/annotation'
+    processed_images_dir: './datasets/ultrasound/processed_images'
+    processed_annotations_dir: './datasets/ultrasound/processed_annotations'
+    k_folds: 5 # Number of folds for K-fold cross-validation
 
 preprocessing: # Data preprocessing
     image_size: [448, 224] # Height, Width (adjust based on your images)
