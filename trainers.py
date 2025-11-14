@@ -204,14 +204,22 @@ class MultiTaskModelTrainer(BaseTrainer):
 
             for names, images, targets in self.val_loader:
                 images, targets, boxes_by_images, labels_by_images, all_boxes, all_labels = concat_batch(images, targets, self.device)
-                pred_boxes, pred_labels = self.model(images, boxes_by_images, all_boxes, all_labels)
-                scores, pred_labels_idxs = F.softmax(pred_labels, dim=-1).max(dim=1)
+                predictions = self.model(images, boxes_by_images, all_boxes) # Get predictions for all images in batch
+                start_idx = 0
                 
-                mAP_preds.append({'boxes': pred_boxes, 'labels': pred_labels_idxs, 'scores': scores})
-                mAP_targets.append({'boxes': all_boxes, 'labels': all_labels})
-                mAP_dict = metric([mAP_preds[-1]], [mAP_targets[-1]])
-                # mAP_by_step.append({k: v for k, v in mAP_dict.items() if k in ['map', 'map_50', 'map_75']})
-                mAP_by_step.append(mAP_dict)
+                for i, boxes in enumerate(boxes_by_images): # Process each image separately
+                    end_idx = start_idx + len(boxes)
+                    
+                    # Ground truth for this image
+                    gt_boxes = all_boxes[start_idx:end_idx]
+                    gt_labels = all_labels[start_idx:end_idx]
+                    
+                    mAP_preds.append(predictions[i])
+                    mAP_targets.append({'boxes': gt_boxes, 'labels': gt_labels})
+                    mAP_dict = metric([mAP_preds[-1]], [mAP_targets[-1]]) # Compute mAP for this step
+                    # mAP_by_step.append({k: v for k, v in mAP_dict.items() if k in ['map', 'map_50', 'map_75']})
+                    mAP_by_step.append(mAP_dict)
+                    start_idx = end_idx
                 
         # metric.plot(mAP_by_step)
         return mAP_preds, mAP_targets, {k: v for k, v in mean_average_precision(mAP_preds, mAP_targets, class_metrics=True).items()}
