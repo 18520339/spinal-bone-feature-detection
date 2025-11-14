@@ -57,7 +57,6 @@ class FasterRCNNTrainer(BaseTrainer):
                 self.optimizer.zero_grad() # Zero gradients
                 batch_total_loss.backward()
                 self.optimizer.step()
-                if self.scheduler: self.scheduler.step()
             train_total_loss = train_total_loss / self.total_train_batches
 
             with torch.no_grad(): # Validation loop
@@ -77,6 +76,7 @@ class FasterRCNNTrainer(BaseTrainer):
             if val_total_loss < self.best_val_total_loss: # Save the best model based on validation loss
                 self.best_val_total_loss = val_total_loss
                 torch.save(self.model.state_dict(), self.best_model_path)
+            if self.scheduler: self.scheduler.step()
                 
     def evaluate(self):
         self.model.eval()
@@ -142,7 +142,6 @@ class MultiTaskModelTrainer(BaseTrainer):
                 self.optimizer.zero_grad() # Zero gradients
                 batch_total_loss.backward()
                 self.optimizer.step()
-                if self.scheduler: self.scheduler.step()
 
                 # Update the progress bar
                 # loop.set_description(f'[EPOCH {epoch+1}/{num_epochs}] {batch_idx + 1}/{self.total_train_batches}')
@@ -185,7 +184,7 @@ class MultiTaskModelTrainer(BaseTrainer):
             self.writer.add_scalars('Loss/BOX', {'train': train_box_loss, 'val': val_box_loss}, epoch)
             self.writer.add_scalars('Loss/EDGE', {'train': train_edge_loss, 'val': val_edge_loss}, epoch)
             print( # Print all the results
-                f'[EPOCH {epoch+1}/{self.num_epochs}] '
+                f'[EPOCH {epoch + 1}/{self.num_epochs}] '
                 f'Train Loss: {train_total_loss:.4f} (CLS: {train_cls_loss:.4f}, BOX: {train_box_loss:.4f}, EDGE: {train_edge_loss:.4f})'
                 # f' - Train mAP@0.5: {train_mAPs['map_50']:.4f}'
                 f' - Val Loss: {val_total_loss:.4f} (CLS: {val_cls_loss:.4f}, BOX: {val_box_loss:.4f}, EDGE: {val_edge_loss:.4f})'
@@ -195,7 +194,8 @@ class MultiTaskModelTrainer(BaseTrainer):
             if val_total_loss < self.best_val_total_loss: # Save the best model based on validation loss
                 self.best_val_total_loss = val_total_loss
                 torch.save(self.model.state_dict(), self.best_model_path)
-                
+            if self.scheduler: self.scheduler.step()
+            
     def evaluate(self):
         self.model.eval()
         with torch.no_grad():
