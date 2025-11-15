@@ -108,7 +108,7 @@ def concat_batch(images, targets, device): # Concat for batch processing
     
 if __name__ == '__main__':
     train_loader = get_loader('train', splits_path='splits1.yaml', batch_size=32)
-    val_loader = get_loader('val', splits_path='splits1.yaml', batch_size=1)
+    val_loader = get_loader('val', splits_path='splits1.yaml', batch_size=32)
     for names, images, targets in train_loader:
         print(f'Batch images shape: {images.shape}')
         for names, target in zip(names, targets):
