@@ -1,9 +1,26 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet18
+from torchvision.models import resnet18, ResNet18_Weights
+from torchvision.models.detection import FasterRCNN
 from torchvision.ops import RoIAlign, nms
 from collections import OrderedDict
+
+
+def custom_resnet18_backbone():
+    backbone = resnet18()
+    original_conv1 = backbone.conv1
+    backbone = nn.Sequential(*list(backbone.children())[:-2]) # Remove the classification head
+    backbone[0] = nn.Conv2d( # Modify the first conv layer to accept 2 channels
+        in_channels=2,
+        out_channels=original_conv1.out_channels,
+        kernel_size=original_conv1.kernel_size,
+        stride=original_conv1.stride,
+        padding=original_conv1.padding,
+        bias=False
+    )
+    backbone.out_channels = 512 # Define number of output channels (ResNet-18's final layer before avgpool has 512)
+    return backbone
 
 
 class EdgeNet(nn.Module):
@@ -113,10 +130,9 @@ class GNN(nn.Module):
     
 
 class MultiTaskModel(nn.Module):
-    def __init__(self, num_classes=2, criterion_box=None, max_detections=30, score_threshold=0.05, nms_threshold=0.5, device=None):
+    def __init__(self, num_classes=2, criterion_box=None, max_detections=40, score_threshold=0.05, nms_threshold=0.5, device=None):
         super(MultiTaskModel, self).__init__()
-        self.backbone = nn.Sequential(*list(resnet18().children())[:-2]) # Remove avgpool and fc layers
-        self.backbone[0] = nn.Conv2d(in_channels=2, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.backbone = custom_resnet18_backbone()
         self.backbone2roi_proj = nn.Conv2d(in_channels=512, out_channels=64, kernel_size=1)
         self.roi_align = RoIAlign(output_size=(5, 5), spatial_scale=1.0 / 32.0, sampling_ratio=-1)
         self.gnn = GNN(in_features=64 * 5 * 5, edge_features=512, out_features=num_classes, device=device, ratio=(1,))
@@ -161,51 +177,66 @@ class MultiTaskModel(nn.Module):
         return self._post_process_predictions(pred_boxes, pred_labels, boxes_by_images) # Post-process predictions during inference
     
     
-    def _post_process_predictions(self, pred_boxes, pred_labels, boxes_by_images): # Filter and limit predictions per image
-        scores = F.softmax(pred_labels, dim=-1)
-        pred_class_scores, pred_class_ids = scores.max(dim=1)
-        results = []
+    def _post_process_predictions(self, pred_boxes, pred_labels, boxes_by_images):
+        # Split concatenated predictions back into per-image format and apply NMS
+        pred_boxes_list, pred_labels_list, pred_scores_list = [], [], []
         start_idx = 0
         
-        for boxes in boxes_by_images: # Split predictions by image
-            end_idx = start_idx + len(boxes)
-            img_boxes = pred_boxes[start_idx:end_idx]
-            img_scores = pred_class_scores[start_idx:end_idx]
-            img_labels = pred_class_ids[start_idx:end_idx]
+        for boxes_by_image in boxes_by_images:
+            end_idx = start_idx + len(boxes_by_image)
             
-            # Filter by score threshold
-            keep_mask = img_scores >= self.score_threshold
-            img_boxes = img_boxes[keep_mask]
-            img_scores = img_scores[keep_mask]
-            img_labels = img_labels[keep_mask]
+            # Get predictions for this image
+            boxes = pred_boxes[start_idx:end_idx]
+            logits = pred_labels[start_idx:end_idx]
+            scores, labels = F.softmax(logits, dim=-1).max(dim=1)
+            
+            # Apply score thresholding
+            score_mask = scores >= self.score_threshold
+            boxes, scores, labels = boxes[score_mask], scores[score_mask], labels[score_mask]
             
             # Apply NMS per class
-            final_boxes, final_scores, final_labels = [], [], []
-            for class_id in torch.unique(img_labels):
-                class_mask = img_labels == class_id
-                class_boxes = img_boxes[class_mask]
-                class_scores = img_scores[class_mask]
+            keep_indices = []
+            for class_id in labels.unique(): 
+                class_mask = labels == class_id
+                class_boxes, class_scores = boxes[class_mask], scores[class_mask]
                 
-                keep_indices = nms(class_boxes, class_scores, self.nms_threshold)
-                final_boxes.append(class_boxes[keep_indices])
-                final_scores.append(class_scores[keep_indices])
-                final_labels.append(torch.full((len(keep_indices),), class_id, dtype=torch.long, device=self.device))
+                if len(class_boxes) > 0:
+                    keep = nms(class_boxes, class_scores, self.nms_threshold)
+                    keep_indices.extend(torch.where(class_mask)[0][keep].tolist())
             
-            if len(final_boxes) > 0:
-                img_boxes = torch.cat(final_boxes)
-                img_scores = torch.cat(final_scores)
-                img_labels = torch.cat(final_labels)
-                
-                if len(img_boxes) > self.max_detections: # Limit to max_detections
-                    top_k = torch.topk(img_scores, self.max_detections).indices
-                    img_boxes = img_boxes[top_k]
-                    img_scores = img_scores[top_k]
-                    img_labels = img_labels[top_k]
-            else:
-                img_boxes = torch.empty((0, 4), device=self.device)
-                img_scores = torch.empty(0, device=self.device)
-                img_labels = torch.empty(0, dtype=torch.long, device=self.device)
+            # Limit to max detections per image
+            if len(keep_indices) > self.max_detections: 
+                keep_scores = scores[keep_indices]
+                top_k = keep_scores.topk(self.max_detections).indices
+                keep_indices = [keep_indices[i] for i in top_k.tolist()]
             
-            results.append({'boxes': img_boxes, 'scores': img_scores, 'labels': img_labels})
+            pred_boxes_list.append(boxes[keep_indices])
+            pred_labels_list.append(labels[keep_indices])
+            pred_scores_list.append(scores[keep_indices])
             start_idx = end_idx
-        return results
+        return pred_boxes_list, pred_labels_list, pred_scores_list
+    
+    
+class CustomFasterRCNN(FasterRCNN):
+    def forward(self, images, targets=None):
+        if self.training and targets is None: raise ValueError('In training mode, targets should be passed')
+        original_image_sizes = [img.shape[-2:] for img in images]
+        images, targets = self.transform(images, targets)
+        features = self.backbone(images.tensors)
+        image_shapes = images.image_sizes
+        
+        proposals, rpn_losses = self.rpn(images, features, targets)
+        if self.training: proposals = [target['boxes'] for target in targets] # List of tensors [num_gt_per_image, 4]
+        detections, detector_losses = self.roi_heads(features, proposals, image_shapes, targets)
+        detections = self.transform.postprocess(detections, image_shapes, original_image_sizes)
+        
+        losses = {}
+        losses.update(rpn_losses)
+        losses.update(detector_losses)
+        
+        if torch.jit.is_scripting():
+            if not self._has_warned:
+                warnings.warn('RCNN always returns a (Losses, Detections) tuple in scripting')
+                self._has_warned = True
+            return losses, detections
+        return self.eager_outputs(losses, detections)
