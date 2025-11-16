@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import resnet18, ResNet18_Weights
-from torchvision.models.detection import FasterRCNN
 from torchvision.ops import RoIAlign, nms
 from collections import OrderedDict
 
@@ -215,28 +214,3 @@ class MultiTaskModel(nn.Module):
             pred_scores_list.append(scores[keep_indices])
             start_idx = end_idx
         return pred_boxes_list, pred_labels_list, pred_scores_list
-    
-    
-class CustomFasterRCNN(FasterRCNN):
-    def forward(self, images, targets=None):
-        if self.training and targets is None: raise ValueError('In training mode, targets should be passed')
-        original_image_sizes = [img.shape[-2:] for img in images]
-        images, targets = self.transform(images, targets)
-        features = self.backbone(images.tensors)
-        if isinstance(features, torch.Tensor): features = OrderedDict([('0', features)])
-        
-        proposals, rpn_losses = self.rpn(images, features, targets)
-        if self.training: proposals = [target['boxes'] for target in targets] # List of tensors [num_gt_per_image, 4]
-        detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
-        detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
-        
-        losses = {}
-        losses.update(rpn_losses)
-        losses.update(detector_losses)
-        
-        if torch.jit.is_scripting():
-            if not self._has_warned:
-                warnings.warn('RCNN always returns a (Losses, Detections) tuple in scripting')
-                self._has_warned = True
-            return losses, detections
-        return self.eager_outputs(losses, detections)
