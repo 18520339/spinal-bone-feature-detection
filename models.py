@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 
 def custom_resnet18_backbone():
-    backbone = resnet18()
+    backbone = resnet18(weights=ResNet18_Weights.DEFAULT)
     original_conv1 = backbone.conv1
     backbone = nn.Sequential(*list(backbone.children())[:-2]) # Remove the classification head
     backbone[0] = nn.Conv2d( # Modify the first conv layer to accept 2 channels
@@ -223,12 +223,12 @@ class CustomFasterRCNN(FasterRCNN):
         original_image_sizes = [img.shape[-2:] for img in images]
         images, targets = self.transform(images, targets)
         features = self.backbone(images.tensors)
-        image_shapes = images.image_sizes
+        if isinstance(features, torch.Tensor): features = OrderedDict([('0', features)])
         
         proposals, rpn_losses = self.rpn(images, features, targets)
         if self.training: proposals = [target['boxes'] for target in targets] # List of tensors [num_gt_per_image, 4]
-        detections, detector_losses = self.roi_heads(features, proposals, image_shapes, targets)
-        detections = self.transform.postprocess(detections, image_shapes, original_image_sizes)
+        detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+        detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
         
         losses = {}
         losses.update(rpn_losses)
