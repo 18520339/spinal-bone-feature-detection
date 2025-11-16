@@ -31,8 +31,30 @@ class BaseTrainer(metaclass=ABCMeta):
         raise NotImplementedError('Subclasses should implement this method')
     
     @abstractmethod
-    def evaluate(self):
+    def get_predictions(self, images, targets, boxes_by_images, all_boxes, all_labels):
+        # Get predictions from the model. Returns (pred_boxes, pred_labels, pred_scores)
         raise NotImplementedError('Subclasses should implement this method')
+    
+    def evaluate(self):  # Common evaluation logic for all trainers
+        self.model.eval()
+        with torch.no_grad():
+            metric = MeanAveragePrecision(class_metrics=True)
+            mAP_preds, mAP_targets = [], []
+
+            for names, images, targets in self.val_loader:
+                images, targets, boxes_by_images, labels_by_images, all_boxes, all_labels = concat_batch(images, targets, self.device)
+                pred_boxes, pred_labels, pred_scores = self.get_predictions(images, targets, boxes_by_images, all_boxes, all_labels)
+                start_idx = 0
+                
+                for i, boxes_by_image in enumerate(boxes_by_images): # Convert targets back to per-image format
+                    end_idx = start_idx + len(boxes_by_image)
+                    mAP_preds.append({'boxes': pred_boxes[i], 'labels': pred_labels[i], 'scores': pred_scores[i]})
+                    mAP_targets.append({'boxes': all_boxes[start_idx:end_idx], 'labels': all_labels[start_idx:end_idx]})
+                    metric.update([mAP_preds[-1]], [mAP_targets[-1]]) # Compute mAP for this step
+                    start_idx = end_idx
+
+        overall = metric.compute() # Aggregate over all batches
+        return mAP_preds, mAP_targets, {k: v for k, v in overall.items()}
     
         
 class FasterRCNNTrainer(BaseTrainer):
@@ -76,31 +98,16 @@ class FasterRCNNTrainer(BaseTrainer):
                 print(f'[EPOCH {epoch + 1}/{self.num_epochs}] Train Loss: {train_total_loss:.4f} - Val Loss: {val_total_loss:.4f}')
                 self.best_val_total_loss = val_total_loss
                 torch.save(self.model.state_dict(), self.best_model_path)
-            if self.scheduler: self.scheduler.step()   
+            if self.scheduler: self.scheduler.step()
             
-
-    def evaluate(self):
-        self.model.eval()
-        with torch.no_grad():
-            metric = MeanAveragePrecision(class_metrics=True)
-            mAP_by_step, mAP_preds, mAP_targets = [], [], []
-            all_preds, all_targets = [], []
-
-            for names, images, targets in self.val_loader:
-                images, targets, boxes_by_images, labels_by_images, all_boxes, all_labels = concat_batch(images, targets, self.device)
-                outputs = self.model(images)
-                all_preds.extend(outputs[0]['labels'].cpu().numpy())
-                all_targets.extend(all_labels.cpu().numpy())
-                
-                mAP_preds.append({'boxes': outputs[0]['boxes'], 'labels': outputs[0]['labels'], 'scores': outputs[0]['scores']})
-                mAP_targets.append({'boxes': all_boxes, 'labels': all_labels})
-                mAP_dict = metric([mAP_preds[-1]], [mAP_targets[-1]])
-                # mAP_by_step.append({k: v for k, v in mAP_dict.items() if k in ['map', 'map_50', 'map_75']})
-                mAP_by_step.append(mAP_dict)
-
-        # metric.plot(mAP_by_step)
-        return mAP_preds, mAP_targets, {k: v for k, v in mean_average_precision(mAP_preds, mAP_targets, class_metrics=True).items()}
-
+    
+    def get_predictions(self, images, targets, boxes_by_images, all_boxes, all_labels): # Get predictions from Faster R-CNN model
+        outputs = self.model(images, targets)
+        pred_boxes = [output['boxes'] for output in outputs]
+        pred_labels = [output['labels'] for output in outputs]
+        pred_scores = [output['scores'] for output in outputs]
+        return pred_boxes, pred_labels, pred_scores
+    
 
 class MultiTaskModelTrainer(BaseTrainer):
     def __init__(self, model, train_loader, val_loader, num_epochs=None, optimizer=None, scheduler=None, best_model_path='best_model.pth'):
@@ -200,26 +207,5 @@ class MultiTaskModelTrainer(BaseTrainer):
             if self.scheduler: self.scheduler.step()
     
     
-    def evaluate(self):
-        self.model.eval()
-        with torch.no_grad():
-            metric = MeanAveragePrecision(class_metrics=True)
-            mAP_by_step, mAP_preds, mAP_targets = [], [], []
-
-            for names, images, targets in self.val_loader:
-                images, targets, boxes_by_images, labels_by_images, all_boxes, all_labels = concat_batch(images, targets, self.device)
-                pred_boxes, pred_labels, pred_scores = self.model(images, boxes_by_images, all_boxes, all_labels)
-                start_idx = 0
-                
-                for i, boxes_by_image in enumerate(boxes_by_images): # Convert targets back to per-image format
-                    end_idx = start_idx + len(boxes_by_image)
-                    mAP_preds.append({'boxes': pred_boxes[i], 'labels': pred_labels[i], 'scores': pred_scores[i]})
-                    mAP_targets.append({'boxes': all_boxes[start_idx:end_idx], 'labels': all_labels[start_idx:end_idx]})
-                    mAP_dict = metric([mAP_preds[-1]], [mAP_targets[-1]]) # Compute mAP for this step
-                    
-                    # mAP_by_step.append({k: v for k, v in mAP_dict.items() if k in ['map', 'map_50', 'map_75']})
-                    mAP_by_step.append(mAP_dict)
-                    start_idx = end_idx
-                    
-        # metric.plot(mAP_by_step)
-        return mAP_preds, mAP_targets, {k: v for k, v in mean_average_precision(mAP_preds, mAP_targets, class_metrics=True).items()}
+    def get_predictions(self, images, targets, boxes_by_images, all_boxes, all_labels): # Get predictions from multi-task model
+        return self.model(images, boxes_by_images, all_boxes, all_labels)
