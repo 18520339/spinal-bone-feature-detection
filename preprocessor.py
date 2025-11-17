@@ -135,7 +135,8 @@ class UltrasoundPreprocessor:
             with open(f'./kfolds/splits{fold_idx}.yaml', 'w') as f:
                 yaml.dump(fold_data, f)
             print(f'Fold {fold_idx}: Train={len(train_names)}, Val={len(val_names)}, mean={mean}, std={std}')
-        
+            
+               
 if __name__ == '__main__':
     preprocessor = UltrasoundPreprocessor(config_path='config.yaml')
     preprocessor.preprocess_and_save_dataset()

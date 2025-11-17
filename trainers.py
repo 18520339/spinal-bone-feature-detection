@@ -10,7 +10,9 @@ from loader import concat_batch
 
 
 class BaseTrainer(metaclass=ABCMeta):
-    def __init__(self, model, train_loader, val_loader, num_epochs=None, optimizer=None, scheduler=None, best_model_path='best_model.pth'):
+    def __init__(
+        self, model, train_loader, val_loader, num_epochs=None, optimizer=None, 
+        scheduler=None, patience=40, min_delta=0.0, best_model_path='best_model.pth'):
         self.model = model
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -26,12 +28,17 @@ class BaseTrainer(metaclass=ABCMeta):
         self.best_val_total_loss = torch.inf
         self.best_model_path = best_model_path
         
+        # Early stopping parameters
+        self.patience = patience
+        self.min_delta = min_delta
+        self.epochs_without_improvement = 0
+        
     @abstractmethod
     def train(self):
         raise NotImplementedError('Subclasses should implement this method')
     
     @abstractmethod
-    def get_predictions(self, images, targets, boxes_by_images, all_boxes, all_labels):
+    def get_predictions(self, images, boxes_by_images, all_boxes, all_labels):
         # Get predictions from the model. Returns (pred_boxes, pred_labels, pred_scores)
         raise NotImplementedError('Subclasses should implement this method')
     
@@ -43,7 +50,7 @@ class BaseTrainer(metaclass=ABCMeta):
 
             for names, images, targets in self.val_loader:
                 images, targets, boxes_by_images, labels_by_images, all_boxes, all_labels = concat_batch(images, targets, self.device)
-                pred_boxes, pred_labels, pred_scores = self.get_predictions(images, targets, boxes_by_images, all_boxes, all_labels)
+                pred_boxes, pred_labels, pred_scores = self.get_predictions(images, boxes_by_images, all_boxes, all_labels)
                 start_idx = 0
                 
                 for i, boxes_by_image in enumerate(boxes_by_images): # Convert targets back to per-image format
@@ -58,8 +65,11 @@ class BaseTrainer(metaclass=ABCMeta):
     
         
 class FasterRCNNTrainer(BaseTrainer):
-    def __init__(self, model, train_loader, val_loader, num_epochs=None, optimizer=None, scheduler=None, best_model_path='best_model.pth'):
-        super().__init__(model, train_loader, val_loader, num_epochs, optimizer, scheduler, best_model_path)
+    def __init__(
+        self, model, train_loader, val_loader, num_epochs=None, optimizer=None, 
+        scheduler=None, patience=40, min_delta=0.0, best_model_path='best_faster_rcnn.pth'):
+        super().__init__(model, train_loader, val_loader, num_epochs, optimizer, scheduler, patience, min_delta, best_model_path)
+
 
     def train(self):
         for epoch in range(self.num_epochs): # Training loop
@@ -94,15 +104,23 @@ class FasterRCNNTrainer(BaseTrainer):
             self.history['train_total_losses'].append(train_total_loss)
             self.history['val_total_losses'].append(val_total_loss)
             self.writer.add_scalars('Loss/Total', {'train': train_total_loss, 'val': val_total_loss}, epoch)
-            if val_total_loss < self.best_val_total_loss: # Save the best model based on validation loss
+            
+            if val_total_loss < self.best_val_total_loss - self.min_delta: # Save the best model based on validation loss
                 print(f'[EPOCH {epoch + 1}/{self.num_epochs}] Train Loss: {train_total_loss:.4f} - Val Loss: {val_total_loss:.4f}')
+                self.epochs_without_improvement = 0
                 self.best_val_total_loss = val_total_loss
                 torch.save(self.model.state_dict(), self.best_model_path)
+            else: self.epochs_without_improvement += 1
+                
+            # Early stopping check
+            if self.patience and self.epochs_without_improvement >= self.patience:
+                print(f'Early stopping triggered after {epoch + 1} epochs. No improvement for {self.patience} epochs.')
+                break
             if self.scheduler: self.scheduler.step()
             
     
-    def get_predictions(self, images, targets, boxes_by_images, all_boxes, all_labels): # Get predictions from Faster R-CNN model
-        outputs = self.model(images, targets)
+    def get_predictions(self, images, boxes_by_images, all_boxes, all_labels): # Get predictions from Faster R-CNN model
+        outputs = self.model(images)
         pred_boxes = [output['boxes'] for output in outputs]
         pred_labels = [output['labels'] for output in outputs]
         pred_scores = [output['scores'] for output in outputs]
@@ -110,8 +128,10 @@ class FasterRCNNTrainer(BaseTrainer):
     
 
 class MultiTaskModelTrainer(BaseTrainer):
-    def __init__(self, model, train_loader, val_loader, num_epochs=None, optimizer=None, scheduler=None, best_model_path='best_model.pth'):
-        super().__init__(model, train_loader, val_loader, num_epochs, optimizer, scheduler, best_model_path)
+    def __init__(
+        self, model, train_loader, val_loader, num_epochs=None, optimizer=None, 
+        scheduler=None, patience=40, min_delta=0.0, best_model_path='best_multitask_model.pth'):
+        super().__init__(model, train_loader, val_loader, num_epochs, optimizer, scheduler, patience, min_delta, best_model_path)
         self.history.update({
             'train_cls_losses': [], 'train_box_losses': [], 'train_edge_losses': [],
             'val_cls_losses': [], 'val_box_losses': [], 'val_edge_losses': [],
@@ -193,7 +213,7 @@ class MultiTaskModelTrainer(BaseTrainer):
             self.writer.add_scalars('Loss/BOX', {'train': train_box_loss, 'val': val_box_loss}, epoch)
             self.writer.add_scalars('Loss/EDGE', {'train': train_edge_loss, 'val': val_edge_loss}, epoch)
             
-            if val_total_loss < self.best_val_total_loss: # Save the best model based on validation loss
+            if val_total_loss < self.best_val_total_loss - self.min_delta: # Save the best model based on validation loss
                 print( # Only print when a new best model is found
                     f'[EPOCH {epoch + 1}/{self.num_epochs}] '
                     f'Train Loss: {train_total_loss:.4f} (CLS: {train_cls_loss:.4f}, BOX: {train_box_loss:.4f}, EDGE: {train_edge_loss:.4f})'
@@ -202,10 +222,17 @@ class MultiTaskModelTrainer(BaseTrainer):
                     # f' - Val mAP@0.5: {val_mAPs['map_50']:.4f}'
                     # f' - LR: {self.scheduler.get_last_lr()[0]:.6f}'
                 )
+                self.epochs_without_improvement = 0
                 self.best_val_total_loss = val_total_loss
                 torch.save(self.model.state_dict(), self.best_model_path)
+            else: self.epochs_without_improvement += 1
+                
+            # Early stopping check
+            if self.patience and self.epochs_without_improvement >= self.patience:
+                print(f'Early stopping triggered after {epoch + 1} epochs. No improvement for {self.patience} epochs.')
+                break
             if self.scheduler: self.scheduler.step()
     
     
-    def get_predictions(self, images, targets, boxes_by_images, all_boxes, all_labels): # Get predictions from multi-task model
+    def get_predictions(self, images, boxes_by_images, all_boxes, all_labels): # Get predictions from multi-task model
         return self.model(images, boxes_by_images, all_boxes, all_labels)
