@@ -9,12 +9,13 @@ from pathlib import Path
 
 
 class ScoliosisDataset(Dataset):
-    def __init__(self, split='train', config_path='config.yaml', splits_path='splits.yaml'):
+    def __init__(self, split='train', config_path='config.yaml', splits_path='splits.yaml', use_bg_class=False):
         # Initialize the dataset for a given split (train/val)
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
 
         self.split = split
+        self.use_bg_class = use_bg_class
         self.processed_images_dir = Path(self.config['data']['processed_images_dir'])
         self.processed_annotations_dir = Path(self.config['data']['processed_annotations_dir'])
         with open(splits_path, 'r') as f:
@@ -68,6 +69,7 @@ class ScoliosisDataset(Dataset):
         # Extract boxes and labels
         boxes = annotations[:, 1:5] # x_min, y_min, x_max, y_max
         labels = annotations[:, 0].astype(np.int64) # 0: Thoracic, 1: Lumbar
+        if self.use_bg_class: labels += 1  # Shift labels to 1: Thoracic, 2: Lumbar, 0: Background
 
         # Apply transformations
         transformed = self.transforms(image=image, bboxes=boxes, labels=labels)
@@ -83,9 +85,9 @@ def collate_fn(batch):
     return list(names), images, list(targets)  # Targets as a list of dictionaries
 
 
-def get_loader(split='train', config_path='config.yaml', splits_path='splits1.yaml', batch_size=32):
+def get_loader(split='train', config_path='config.yaml', splits_path='splits1.yaml', batch_size=32, use_bg_class=False):
     # Create a data loader for a specific split (train/val)
-    dataset = ScoliosisDataset(split=split, config_path=config_path, splits_path=splits_path)
+    dataset = ScoliosisDataset(split=split, config_path=config_path, splits_path=splits_path, use_bg_class=use_bg_class)
     print(f'[{splits_path}] {split.capitalize()} dataset: {len(dataset)} samples')
     return DataLoader(
         dataset, batch_size=batch_size,
