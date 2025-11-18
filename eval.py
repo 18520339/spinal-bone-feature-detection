@@ -153,9 +153,9 @@ def compute_pr_curve(preds, targets, iou_threshold=0.5):
     return precision, recall, classification_gt_labels_for_report, classification_pred_labels_for_report
 
 
-def plot_cls_metrics(kfolds_preds, kfolds_targets, best_fold):
+def plot_cls_metrics(preds, targets):
     label_names_full = ['Thoracic', 'Lumbar', 'Missed'] 
-    precision, recall, all_matched_gt_labels, all_matched_pred_labels = compute_pr_curve(kfolds_preds[best_fold], kfolds_targets[best_fold])
+    precision, recall, all_matched_gt_labels, all_matched_pred_labels = compute_pr_curve(preds, targets)
 
     # Only include labels present in the ground truth for the report, but also include '2' if it's in predictions for FNs.
     unique_gt_labels = np.unique(all_matched_gt_labels).tolist()
@@ -175,46 +175,46 @@ def plot_cls_metrics(kfolds_preds, kfolds_targets, best_fold):
     cf_matrix = confusion_matrix(all_matched_gt_labels, all_matched_pred_labels, labels=cm_labels_extended)
     annot_labels = np.asarray([f'{count:,}' for count in cf_matrix.flatten()]).reshape(cf_matrix.shape)
 
-    plt.figure(figsize=(15, 4))
-    plt.subplot(1, 3, 1)
+    plt.figure(figsize=(10, 4))
+    plt.subplot(1, 2, 1)
     plt.plot(recall, precision, marker='.')
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Precision-Recall Curve')
     plt.grid(True)
 
-    ax_cm = plt.subplot(1, 3, 2)
+    ax_cm = plt.subplot(1, 2, 2)
     sns.heatmap(
         cf_matrix, fmt='', annot=annot_labels, cmap='YlGnBu', square=True, 
         annot_kws={'size': 12}, xticklabels=cm_display_names, yticklabels=cm_display_names, ax=ax_cm
     )
     plt.title('Confusion Matrix') # Add title to CM
 
-    plt.subplot(1, 3, 3)
-    if len(np.unique(all_matched_gt_labels)) < 2:
-        print('ROC curve cannot be plotted: Not enough unique classes in ground truth labels (need at least 2).')
-        plt.text(
-            0.5, 0.5, 'ROC Not Plotted\n(Single Class GT)', 
-            horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes, fontsize=12
-        )
-    else:
-        # ROC curve calculation is generally for binary classification.
-        # If 'Missed' (label 2) is present in predicted labels, or if the GTs themselves are not strictly binary (0 and 1),
-        # a standard ROC curve for labels 0 and 1 might be misleading or incorrect.
-        if 2 in unique_pred_labels or len(unique_gt_labels) != 2:
-            print(f'ROC curve not plotted for multi-class/imbalanced scenario (GT unique classes: {unique_gt_labels}, Pred unique classes: {unique_pred_labels}).')
-            plt.text(
-                0.5, 0.5, 'ROC Not Plotted\n(Multi-class/Missed preds)', 
-                horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes, fontsize=10
-            )
-        else: # If only foreground classes 0 and 1 are involved in both GT and Pred, proceed with binary ROC
-            fpr, tpr, _ = roc_curve(all_matched_gt_labels, all_matched_pred_labels)
-            plt.plot(fpr, tpr, label=f'ROC curve (AUC = {auc(fpr, tpr):.3f})')
-            plt.plot([0, 1], [0, 1], 'm--')
-            plt.legend(loc='lower right', frameon=True, shadow=True, borderpad=0.5)
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title('Receiver Operating Characteristic')
+    # plt.subplot(1, 3, 3)
+    # if len(np.unique(all_matched_gt_labels)) < 2:
+    #     print('ROC curve cannot be plotted: Not enough unique classes in ground truth labels (need at least 2).')
+    #     plt.text(
+    #         0.5, 0.5, 'ROC Not Plotted\n(Single Class GT)', 
+    #         horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes, fontsize=12
+    #     )
+    # else:
+    #     # ROC curve calculation is generally for binary classification.
+    #     # If 'Missed' (label 2) is present in predicted labels, or if the GTs themselves are not strictly binary (0 and 1),
+    #     # a standard ROC curve for labels 0 and 1 might be misleading or incorrect.
+    #     if 2 in unique_pred_labels or len(unique_gt_labels) != 2:
+    #         print(f'ROC curve not plotted for multi-class/imbalanced scenario (GT unique classes: {unique_gt_labels}, Pred unique classes: {unique_pred_labels}).')
+    #         plt.text(
+    #             0.5, 0.5, 'ROC Not Plotted\n(Multi-class/Missed preds)', 
+    #             horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes, fontsize=10
+    #         )
+    #     else: # If only foreground classes 0 and 1 are involved in both GT and Pred, proceed with binary ROC
+    #         fpr, tpr, _ = roc_curve(all_matched_gt_labels, all_matched_pred_labels)
+    #         plt.plot(fpr, tpr, label=f'ROC curve (AUC = {auc(fpr, tpr):.3f})')
+    #         plt.plot([0, 1], [0, 1], 'm--')
+    #         plt.legend(loc='lower right', frameon=True, shadow=True, borderpad=0.5)
+    #         plt.xlabel('False Positive Rate')
+    #         plt.ylabel('True Positive Rate')
+    #         plt.title('Receiver Operating Characteristic')
             
     plt.tight_layout()
     plt.show()
